@@ -7,8 +7,20 @@ import (
 
 type OptionFn func(s *Server)
 
-func WithReadTimeout(readTimeout time.Duration) OptionFn {}
+func WithReadTimeout(readTimeout time.Duration) OptionFn {
+	return func(s *Server) {
+		s.readTimeout = readTimeout
+	}
+}
 
-func WithTLSConfig(cfg *tls.Config) OptionFn {}
+func WithTLSConfig(cfg *tls.Config) OptionFn {
+	return func(s *Server) {
+		s.tlsConfig = cfg
+	}
+}
 
-func WithWriteTimeout(writeTimeout time.Duration) OptionFn {}
+func WithWriteTimeout(writeTimeout time.Duration) OptionFn {
+	return func(s *Server) {
+		s.writeTimeout = writeTimeout
+	}
+}
