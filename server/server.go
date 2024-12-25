@@ -8,7 +8,6 @@ import (
 	"github.com/smallnest/rpcx/protocol"
 	"github.com/smallnest/rpcx/server"
 	"net"
-	"net/http"
 	"time"
 )
 
@@ -44,11 +43,20 @@ func (s *Server) RegisterOnShutdown(f func()) {
 func (s *Server) Serve(network, address string) (err error) {
 	var listener net.Listener
 	if listener, err = s.makeListener(network, address); err != nil {
-
+		return err
 	}
+	if network == "http" {
+		s.serveByHTTP(listener, "")
+		return nil
+	}
+	return s.serveListener(listener)
 }
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (s *Server) serveListener(listener net.Listener) error {
+
+}
+
+func (s *Server) serveByHTTP(ln net.Listener, rpcPath string) {
 
 }
 
