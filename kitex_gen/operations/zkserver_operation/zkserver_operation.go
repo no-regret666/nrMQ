@@ -7,7 +7,7 @@ import (
 	"errors"
 	client "github.com/cloudwego/kitex/client"
 	kitex "github.com/cloudwego/kitex/pkg/serviceinfo"
-	operations "nrMQ/kitex_gen/api"
+	operations "nrMQ/kitex_gen/operations"
 )
 
 var errInvalidMessageType = errors.New("invalid message type for service method handler")
@@ -17,6 +17,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		createTopicHandler,
 		newZkServer_OperationCreateTopicArgs,
 		newZkServer_OperationCreateTopicResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"CreatePart": kitex.NewMethodInfo(
+		createPartHandler,
+		newZkServer_OperationCreatePartArgs,
+		newZkServer_OperationCreatePartResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
@@ -70,7 +77,7 @@ func newServiceInfo(hasStreaming bool, keepStreamingMethods bool, keepNonStreami
 		methods[name] = m
 	}
 	extra := map[string]interface{}{
-		"PackageName": "api",
+		"PackageName": "operations",
 	}
 	if hasStreaming {
 		extra["streaming"] = hasStreaming
@@ -104,6 +111,24 @@ func newZkServer_OperationCreateTopicResult() interface{} {
 	return operations.NewZkServer_OperationCreateTopicResult()
 }
 
+func createPartHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*operations.ZkServer_OperationCreatePartArgs)
+	realResult := result.(*operations.ZkServer_OperationCreatePartResult)
+	success, err := handler.(operations.ZkServer_Operation).CreatePart(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newZkServer_OperationCreatePartArgs() interface{} {
+	return operations.NewZkServer_OperationCreatePartArgs()
+}
+
+func newZkServer_OperationCreatePartResult() interface{} {
+	return operations.NewZkServer_OperationCreatePartResult()
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -119,6 +144,16 @@ func (p *kClient) CreateTopic(ctx context.Context, req *operations.CreateTopicRe
 	_args.Req = req
 	var _result operations.ZkServer_OperationCreateTopicResult
 	if err = p.c.Call(ctx, "CreateTopic", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) CreatePart(ctx context.Context, req *operations.CreatePartRequest) (r *operations.CreatePartResponse, err error) {
+	var _args operations.ZkServer_OperationCreatePartArgs
+	_args.Req = req
+	var _result operations.ZkServer_OperationCreatePartResult
+	if err = p.c.Call(ctx, "CreatePart", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

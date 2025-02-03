@@ -6,12 +6,13 @@ import (
 	"context"
 	client "github.com/cloudwego/kitex/client"
 	callopt "github.com/cloudwego/kitex/client/callopt"
-	operations "nrMQ/kitex_gen/api"
+	operations "nrMQ/kitex_gen/operations"
 )
 
 // Client is designed to provide IDL-compatible methods with call-option parameter for kitex framework.
 type Client interface {
 	CreateTopic(ctx context.Context, req *operations.CreateTopicRequest, callOptions ...callopt.Option) (r *operations.CreateTopicResponse, err error)
+	CreatePart(ctx context.Context, req *operations.CreatePartRequest, callOptions ...callopt.Option) (r *operations.CreatePartResponse, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -46,4 +47,9 @@ type kZkServer_OperationClient struct {
 func (p *kZkServer_OperationClient) CreateTopic(ctx context.Context, req *operations.CreateTopicRequest, callOptions ...callopt.Option) (r *operations.CreateTopicResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.CreateTopic(ctx, req)
+}
+
+func (p *kZkServer_OperationClient) CreatePart(ctx context.Context, req *operations.CreatePartRequest, callOptions ...callopt.Option) (r *operations.CreatePartResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.CreatePart(ctx, req)
 }

@@ -2,8 +2,9 @@ package client
 
 import (
 	"context"
-	"nrMQ/kitex_gen/api"
-	"nrMQ/kitex_gen/api/zkserver_operation"
+	"github.com/cloudwego/kitex/client"
+	"nrMQ/kitex_gen/operations"
+	"nrMQ/kitex_gen/operations/zkserver_operation"
 	"sync"
 )
 
@@ -27,13 +28,27 @@ func newProducer(zkBroker string, name string) (*Producer, error) {
 		name: name,
 	}
 	var err error
+	p.zkBroker, err = zkserver_operation.NewClient(p.name, client.WithHostPorts(zkBroker))
+
 	return &p, err
 }
 
-func (p *Producer) createTopic(newTopic string, queueNum int) error {
-	resp, err := p.zkBroker.CreateTopic(context.Background(), &api.CreateTopicRequest{
-		TopicName: newTopic,
+func (p *Producer) createTopic(topicName string) error {
+	resp, err := p.zkBroker.CreateTopic(context.Background(), &operations.CreateTopicRequest{
+		TopicName: topicName,
 	})
+	if err != nil || !resp.Ok {
+		return err
+	}
+	return nil
+}
+
+func (p *Producer) createPart(topicName, partName string) error {
+	resp, err := p.zkBroker.CreatePart(context.Background(), &operations.CreatePartRequest{
+		TopicName: topicName,
+		PartName:  partName,
+	})
+
 	if err != nil || !resp.Ok {
 		return err
 	}

@@ -3,7 +3,7 @@ package zkserver_operation
 
 import (
 	server "github.com/cloudwego/kitex/server"
-	operations "nrMQ/kitex_gen/api"
+	operations "nrMQ/kitex_gen/operations"
 )
 
 // NewServer creates a server.Server with the given handler and options.
