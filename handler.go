@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	api "nrMQ/kitex_gen/api"
 	operations "nrMQ/kitex_gen/api"
 	operations "nrMQ/kitex_gen/operations"
 )
@@ -17,6 +18,18 @@ func (s *ZkServer_OperationImpl) CreateTopic(ctx context.Context, req *operation
 
 // CreatePart implements the ZkServer_OperationImpl interface.
 func (s *ZkServer_OperationImpl) CreatePart(ctx context.Context, req *operations.CreatePartRequest) (resp *operations.CreatePartResponse, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// ProGetBroker implements the ZkServer_OperationImpl interface.
+func (s *ZkServer_OperationImpl) ProGetBroker(ctx context.Context, req *api.ProGetBrokRequest) (resp *api.ProGetBrokResponse, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// SetPartitionState implements the ZkServer_OperationImpl interface.
+func (s *ZkServer_OperationImpl) SetPartitionState(ctx context.Context, req *api.SetPartitionStateRequest) (resp *api.SetPartitionStateResponse, err error) {
 	// TODO: Your code here...
 	return
 }

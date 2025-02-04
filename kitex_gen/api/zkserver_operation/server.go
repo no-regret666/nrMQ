@@ -3,11 +3,11 @@ package zkserver_operation
 
 import (
 	server "github.com/cloudwego/kitex/server"
-	operations "nrMQ/kitex_gen/operations"
+	api "nrMQ/kitex_gen/api"
 )
 
 // NewServer creates a server.Server with the given handler and options.
-func NewServer(handler operations.ZkServer_Operation, opts ...server.Option) server.Server {
+func NewServer(handler api.ZkServer_Operation, opts ...server.Option) server.Server {
 	var options []server.Option
 
 	options = append(options, opts...)
@@ -20,6 +20,6 @@ func NewServer(handler operations.ZkServer_Operation, opts ...server.Option) ser
 	return svr
 }
 
-func RegisterService(svr server.Server, handler operations.ZkServer_Operation, opts ...server.RegisterOption) error {
+func RegisterService(svr server.Server, handler api.ZkServer_Operation, opts ...server.RegisterOption) error {
 	return svr.RegisterService(serviceInfo(), handler, opts...)
 }
