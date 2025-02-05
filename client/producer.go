@@ -21,14 +21,16 @@ type Producer struct {
 
 	Name            string //唯一标识
 	ZkBroker        zkserver_operation.Client
-	TopicPartitions map[string]server_operations.Client //缓存主题分区和客户端关系
+	TopicPartitions map[string]server_operations.Client //map[topicname+partname]cli：缓存主题分区和客户端关系
 	TopPartIndexs   map[string]int64
 }
 
-func newProducer(zkBroker string, name string) (*Producer, error) {
+func NewProducer(zkBroker string, name string) (*Producer, error) {
 	p := Producer{
-		mu:   sync.RWMutex{},
-		Name: name,
+		mu:              sync.RWMutex{},
+		Name:            name,
+		TopicPartitions: make(map[string]server_operations.Client),
+		TopPartIndexs:   make(map[string]int64),
 	}
 	var err error
 	p.ZkBroker, err = zkserver_operation.NewClient(p.Name, client.WithHostPorts(zkBroker))
@@ -36,7 +38,7 @@ func newProducer(zkBroker string, name string) (*Producer, error) {
 	return &p, err
 }
 
-func (p *Producer) createTopic(topicName string) error {
+func (p *Producer) CreateTopic(topicName string) error {
 	resp, err := p.ZkBroker.CreateTopic(context.Background(), &api.CreateTopicRequest{
 		TopicName: topicName,
 	})
@@ -46,7 +48,7 @@ func (p *Producer) createTopic(topicName string) error {
 	return nil
 }
 
-func (p *Producer) createPart(topicName, partName string) error {
+func (p *Producer) CreatePart(topicName, partName string) error {
 	resp, err := p.ZkBroker.CreatePart(context.Background(), &api.CreatePartRequest{
 		TopicName: topicName,
 		PartName:  partName,

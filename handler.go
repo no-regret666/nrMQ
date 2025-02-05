@@ -4,7 +4,6 @@ import (
 	"context"
 	api "nrMQ/kitex_gen/api"
 	operations "nrMQ/kitex_gen/api"
-	operations "nrMQ/kitex_gen/operations"
 )
 
 // ZkServer_OperationImpl implements the last service interface defined in the IDL.

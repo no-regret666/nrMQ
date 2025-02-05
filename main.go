@@ -1,25 +1,23 @@
 package main
 
 import (
-  "fmt"
+	"fmt"
+	"reflect"
 )
 
-//TIP To run your code, right-click the code and select <b>Run</b>. Alternatively, click
-// the <icon src="AllIcons.Actions.Execute"/> icon in the gutter and select the <b>Run</b> menu item from here.
-
 func main() {
-  //TIP Press <shortcut actionId="ShowIntentionActions"/> when your caret is at the underlined or highlighted text
-  // to see how GoLand suggests fixing it.
-  s := "gopher"
-  fmt.Println("Hello and welcome, %s!", s)
+	// 示例值
+	var x int = 42
+	var y string = "Hello, Go!"
+	var z []string = []string{"a", "b", "c"}
 
-  for i := 1; i <= 5; i++ {
-	//TIP You can try debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-	// for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>. To start your debugging session, 
-	// right-click your code in the editor and select the <b>Debug</b> option. 
-	fmt.Println("i =", 100/i)
-  }
+	// 获取类型信息
+	fmt.Println("Type of x:", reflect.TypeOf(x)) // int
+	fmt.Println("Type of y:", reflect.TypeOf(y)) // string
+	fmt.Println("Type of z:", reflect.TypeOf(z)) // []string
+
+	// 使用 Type 的方法
+	t := reflect.TypeOf(z)
+	fmt.Println("Type name:", t.Name()) // 输出: ""
+	fmt.Println("Kind:", t.Kind())      // 输出: slice
 }
-
-//TIP See GoLand help at <a href="https://www.jetbrains.com/help/go/">jetbrains.com/help/go/</a>.
-// Also, you can try interactive lessons for GoLand by selecting 'Help | Learn IDE Features' from the main menu.
