@@ -17,8 +17,17 @@ struct PushResponse {
     2: string err
 }
 
+struct InfoRequest {
+    1: string ip_port
+}
+
+struct InfoResponse {
+    1: bool ret
+}
+
 service Server_Operations {
     PushResponse push(1: PushRequest req)
+    InfoResponse ConInfo(1: InfoRequest req)
 }
 
 struct CreateTopicRequest {
@@ -68,4 +77,29 @@ service ZkServer_Operation {
     CreatePartResponse CreatePart(1: CreatePartRequest req)
     ProGetBrokResponse ProGetBroker(1: ProGetBrokRequest req)
     SetPartitionStateResponse SetPartitionState(1: SetPartitionStateRequest req)
+}
+
+struct PubRequest {
+    1: string topic_name
+    2: string part_name
+    3: i64 start_index
+    4: i64 end_index
+    5: binary msg
+}
+
+struct PubResponse {
+    1: bool ret
+}
+
+struct PingPongRequest {
+    1: bool ping
+}
+
+struct PingPongResponse {
+    1: bool pong
+}
+
+service Client_Operations {
+    PubResponse pub(1: PubRequest req)
+    PingPongResponse pingpong(1: PingPongRequest req)
 }

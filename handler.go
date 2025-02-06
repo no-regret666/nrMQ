@@ -32,3 +32,15 @@ func (s *ZkServer_OperationImpl) SetPartitionState(ctx context.Context, req *api
 	// TODO: Your code here...
 	return
 }
+
+// Pub implements the Client_OperationsImpl interface.
+func (s *Client_OperationsImpl) Pub(ctx context.Context, req *api.PubRequest) (resp *api.PubResponse, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// Pingpong implements the Client_OperationsImpl interface.
+func (s *Client_OperationsImpl) Pingpong(ctx context.Context, req *api.PingPongRequest) (resp *api.PingPongResponse, err error) {
+	// TODO: Your code here...
+	return
+}
