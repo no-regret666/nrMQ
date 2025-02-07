@@ -25,9 +25,23 @@ struct InfoResponse {
     1: bool ret
 }
 
+//consumer准备开始接收信息
+struct InfoGetRequest {
+    1: string cli_name
+    2: string topic_name
+    3: string part_name
+    4: i64 offset
+    5: i8 option
+}
+
+struct InfoGetResponse {
+    1: bool ret
+}
+
 service Server_Operations {
     PushResponse push(1: PushRequest req)
     InfoResponse ConInfo(1: InfoRequest req)
+    InfoGetResponse StartToGet(1: InfoGetRequest req)
 }
 
 struct CreateTopicRequest {
@@ -72,11 +86,38 @@ struct SetPartitionStateResponse {
     2: string err
 }
 
+struct SubRequest {
+    1: string consumer
+    2: string topic
+    3: string key
+    4: i8 option
+}
+
+struct SubResponse {
+    1: bool ret
+}
+
+struct ConStartGetBrokRequest {
+    1: string cli_name
+    2: string topic_name
+    3: string part_name
+    4: i8 option
+    5: i64 index
+}
+
+struct ConStartGetBrokResponse {
+    1: bool ret
+    2: i64 size
+    3: binary parts
+}
+
 service ZkServer_Operation {
     CreateTopicResponse CreateTopic(1: CreateTopicRequest req)
     CreatePartResponse CreatePart(1: CreatePartRequest req)
     ProGetBrokResponse ProGetBroker(1: ProGetBrokRequest req)
     SetPartitionStateResponse SetPartitionState(1: SetPartitionStateRequest req)
+    SubResponse Sub(1: SubRequest req)
+    ConStartGetBrokResponse ConStartGetBroker(1: ConStartGetBrokRequest req)
 }
 
 struct PubRequest {

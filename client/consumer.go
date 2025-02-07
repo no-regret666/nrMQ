@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/server"
@@ -10,12 +11,13 @@ import (
 	ser "nrMQ/kitex_gen/api/client_operations"
 	"nrMQ/kitex_gen/api/server_operations"
 	"nrMQ/kitex_gen/api/zkserver_operation"
+	"nrMQ/logger"
 	"sync"
 )
 
 type Consumer struct {
 	mu    sync.RWMutex
-	Name  string
+	Name  string //唯一标识
 	State string
 
 	srv      server.Server
@@ -81,9 +83,126 @@ func (c *Consumer) SendInfo(port string, cli *server_operations.Client) error {
 }
 
 func (c *Consumer) Subscription(topic, partition string, option int8) (err error) {
-	//向zkserver订阅topic和partition
+	//向zkserver订阅topic和partition   option:订阅类型，PTP/PSB
 	c.mu.RLock()
 	zk := c.zkBroker
 	c.mu.RUnlock()
 
+	resp, err := zk.Sub(context.Background(), &api.SubRequest{
+		Consumer: c.Name,
+		Topic:    topic,
+		Key:      partition,
+		Option:   option,
+	})
+
+	if err != nil || !resp.Ret {
+		return err
+	}
+	return nil
+}
+
+type Info struct {
+	Offset int64
+	Topic  string
+	Part   string
+	Option int8
+	Size   int8
+	Cli    *server_operations.Client
+	Bufs   map[int64]*api.PubRequest
+}
+
+func NewInfo(offset int64, topic, part string) Info {
+	return Info{
+		Offset: offset,
+		Topic:  topic,
+		Part:   part,
+		Bufs:   make(map[int64]*api.PubRequest),
+	}
+}
+
+func (c *Consumer) StartGet(info Info) (partkeys []PartKey, ret string, err error) {
+	resp, err := c.zkBroker.ConStartGetBroker(context.Background(), &api.ConStartGetBrokRequest{
+		CliName:   c.Name,
+		TopicName: info.Topic,
+		PartName:  info.Part,
+		Option:    info.Option,
+		Index:     info.Offset,
+	})
+
+	if err != nil || !resp.Ret {
+		return nil, ret, err
+	}
+
+	var parts Parts
+	err = json.Unmarshal(resp.Parts, &parts)
+	if err != nil {
+		return nil, "", err
+	}
+	logger.DEBUG(logger.DLog, "start get parts json is %v turn %v\n", resp.Parts, parts.PartKeys)
+	if info.Option == 1 || info.Option == 3 { //pub
+		ret, err = c.StartGetToBroker(parts.PartKeys, info)
+	}
+	return parts.PartKeys, ret, err
+}
+
+func (c *Consumer) StartGetToBroker(parts []PartKey, info Info) (ret string, err error) {
+	//连接上各个broker，并发送start请求
+	for _, part := range parts {
+		if part.Err != "ok" {
+			ret += part.Err
+			continue
+		}
+
+		req := &api.InfoGetRequest{
+			CliName:   c.Name,
+			TopicName: info.Topic,
+			PartName:  info.Part,
+			Option:    info.Option,
+			Offset:    part.Offset,
+		}
+
+		bro_cli, ok := c.Brokers[part.BrokerName]
+		if !ok {
+			bro_cli, err := server_operations.NewClient(c.Name, client.WithHostPorts(part.Broker_H_P))
+			if err != nil {
+				return ret, err
+			}
+			if info.Option == 1 { //ptp
+				c.Brokers[part.BrokerName] = &bro_cli
+				bro_cli.StartToGet(context.Background(), req)
+			}
+		}
+		//发送info
+		err = c.SendInfo(c.port, bro_cli)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+			return ret, err
+		}
+
+		if info.Option == 3 { //psb
+			(*bro_cli).StartToGet(context.Background(), req)
+		}
+
+	}
+	return ret, nil
+}
+
+type Msg struct {
+	Index      int64  `json:"index"`
+	Topic_name string `json:"topic_name"`
+	Part_name  string `json:"part_name"`
+	Msg        []byte `json:"msg"`
+}
+
+func (c *Consumer) Pull(info Info) (int64, int64, []Msg, error) {
+	//向broker拉取信息
+}
+
+func (c *Consumer) Pub(ctx context.Context, req *api.PubRequest) (resp *api.PubResponse, err error) {
+
+}
+
+func (c *Consumer) Pingpong(ctx context.Context, req *api.PingPongRequest) (resp *api.PingPongResponse, err error) {
+	fmt.Println("ping pong")
+	return &api.PingPongResponse{Pong: true}, nil
 }

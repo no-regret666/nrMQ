@@ -27,6 +27,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
+	"StartToGet": kitex.NewMethodInfo(
+		startToGetHandler,
+		newServer_OperationsStartToGetArgs,
+		newServer_OperationsStartToGetResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
 }
 
 var (
@@ -129,6 +136,24 @@ func newServer_OperationsConInfoResult() interface{} {
 	return api.NewServer_OperationsConInfoResult()
 }
 
+func startToGetHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.Server_OperationsStartToGetArgs)
+	realResult := result.(*api.Server_OperationsStartToGetResult)
+	success, err := handler.(api.Server_Operations).StartToGet(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newServer_OperationsStartToGetArgs() interface{} {
+	return api.NewServer_OperationsStartToGetArgs()
+}
+
+func newServer_OperationsStartToGetResult() interface{} {
+	return api.NewServer_OperationsStartToGetResult()
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -154,6 +179,16 @@ func (p *kClient) ConInfo(ctx context.Context, req *api.InfoRequest) (r *api.Inf
 	_args.Req = req
 	var _result api.Server_OperationsConInfoResult
 	if err = p.c.Call(ctx, "ConInfo", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) StartToGet(ctx context.Context, req *api.InfoGetRequest) (r *api.InfoGetResponse, err error) {
+	var _args api.Server_OperationsStartToGetArgs
+	_args.Req = req
+	var _result api.Server_OperationsStartToGetResult
+	if err = p.c.Call(ctx, "StartToGet", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

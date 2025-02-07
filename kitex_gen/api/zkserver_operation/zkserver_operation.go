@@ -41,6 +41,20 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
+	"Sub": kitex.NewMethodInfo(
+		subHandler,
+		newZkServer_OperationSubArgs,
+		newZkServer_OperationSubResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"ConStartGetBroker": kitex.NewMethodInfo(
+		conStartGetBrokerHandler,
+		newZkServer_OperationConStartGetBrokerArgs,
+		newZkServer_OperationConStartGetBrokerResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
 }
 
 var (
@@ -179,6 +193,42 @@ func newZkServer_OperationSetPartitionStateResult() interface{} {
 	return api.NewZkServer_OperationSetPartitionStateResult()
 }
 
+func subHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.ZkServer_OperationSubArgs)
+	realResult := result.(*api.ZkServer_OperationSubResult)
+	success, err := handler.(api.ZkServer_Operation).Sub(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newZkServer_OperationSubArgs() interface{} {
+	return api.NewZkServer_OperationSubArgs()
+}
+
+func newZkServer_OperationSubResult() interface{} {
+	return api.NewZkServer_OperationSubResult()
+}
+
+func conStartGetBrokerHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.ZkServer_OperationConStartGetBrokerArgs)
+	realResult := result.(*api.ZkServer_OperationConStartGetBrokerResult)
+	success, err := handler.(api.ZkServer_Operation).ConStartGetBroker(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newZkServer_OperationConStartGetBrokerArgs() interface{} {
+	return api.NewZkServer_OperationConStartGetBrokerArgs()
+}
+
+func newZkServer_OperationConStartGetBrokerResult() interface{} {
+	return api.NewZkServer_OperationConStartGetBrokerResult()
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -224,6 +274,26 @@ func (p *kClient) SetPartitionState(ctx context.Context, req *api.SetPartitionSt
 	_args.Req = req
 	var _result api.ZkServer_OperationSetPartitionStateResult
 	if err = p.c.Call(ctx, "SetPartitionState", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) Sub(ctx context.Context, req *api.SubRequest) (r *api.SubResponse, err error) {
+	var _args api.ZkServer_OperationSubArgs
+	_args.Req = req
+	var _result api.ZkServer_OperationSubResult
+	if err = p.c.Call(ctx, "Sub", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) ConStartGetBroker(ctx context.Context, req *api.ConStartGetBrokRequest) (r *api.ConStartGetBrokResponse, err error) {
+	var _args api.ZkServer_OperationConStartGetBrokerArgs
+	_args.Req = req
+	var _result api.ZkServer_OperationConStartGetBrokerResult
+	if err = p.c.Call(ctx, "ConStartGetBroker", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

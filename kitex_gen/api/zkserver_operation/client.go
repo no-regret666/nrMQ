@@ -15,6 +15,8 @@ type Client interface {
 	CreatePart(ctx context.Context, req *api.CreatePartRequest, callOptions ...callopt.Option) (r *api.CreatePartResponse, err error)
 	ProGetBroker(ctx context.Context, req *api.ProGetBrokRequest, callOptions ...callopt.Option) (r *api.ProGetBrokResponse, err error)
 	SetPartitionState(ctx context.Context, req *api.SetPartitionStateRequest, callOptions ...callopt.Option) (r *api.SetPartitionStateResponse, err error)
+	Sub(ctx context.Context, req *api.SubRequest, callOptions ...callopt.Option) (r *api.SubResponse, err error)
+	ConStartGetBroker(ctx context.Context, req *api.ConStartGetBrokRequest, callOptions ...callopt.Option) (r *api.ConStartGetBrokResponse, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -64,4 +66,14 @@ func (p *kZkServer_OperationClient) ProGetBroker(ctx context.Context, req *api.P
 func (p *kZkServer_OperationClient) SetPartitionState(ctx context.Context, req *api.SetPartitionStateRequest, callOptions ...callopt.Option) (r *api.SetPartitionStateResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.SetPartitionState(ctx, req)
+}
+
+func (p *kZkServer_OperationClient) Sub(ctx context.Context, req *api.SubRequest, callOptions ...callopt.Option) (r *api.SubResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.Sub(ctx, req)
+}
+
+func (p *kZkServer_OperationClient) ConStartGetBroker(ctx context.Context, req *api.ConStartGetBrokRequest, callOptions ...callopt.Option) (r *api.ConStartGetBrokResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.ConStartGetBroker(ctx, req)
 }
