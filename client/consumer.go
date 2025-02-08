@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/server"
+	"io"
 	"net"
 	"nrMQ/kitex_gen/api"
 	ser "nrMQ/kitex_gen/api/client_operations"
@@ -187,6 +188,20 @@ func (c *Consumer) StartGetToBroker(parts []PartKey, info Info) (ret string, err
 	return ret, nil
 }
 
+func (c *Consumer) GetCli(part PartKey) (cli *server_operations.Client, err error) {
+	cli, ok := c.Brokers[part.BrokerName]
+	if !ok {
+		bro_cli, err := server_operations.NewClient(c.Name, client.WithHostPorts(part.Broker_H_P))
+		if err != nil {
+			return nil, err
+		}
+		cli = &bro_cli
+		c.Brokers[part.BrokerName] = cli
+		logger.DEBUG(logger.DLog, "get cli(%v) fail,new client\n", part.BrokerName)
+	}
+	return cli, nil
+}
+
 type Msg struct {
 	Index      int64  `json:"index"`
 	Topic_name string `json:"topic_name"`
@@ -196,10 +211,35 @@ type Msg struct {
 
 func (c *Consumer) Pull(info Info) (int64, int64, []Msg, error) {
 	//向broker拉取信息
+	resp, err := (*info.Cli).Pull(context.Background(), &api.PullRequest{
+		Consumer: c.Name,
+		Topic:    info.Topic,
+		Key:      info.Part,
+		Offset:   info.Offset,
+		Size:     info.Size,
+		Option:   info.Option,
+	})
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return -1, -1, nil, err
+	}
+
+	msgs := make([]Msg, resp.EndIndex-resp.StartIndex)
+	err = json.Unmarshal(resp.Msgs, &msgs)
+	if err != nil {
+		return 0, 0, nil, err
+	}
+	if resp.Err == "file EOF" {
+		return 0, 0, nil, io.EOF
+	}
+
+	return resp.StartIndex, resp.EndIndex, msgs, nil
 }
 
 func (c *Consumer) Pub(ctx context.Context, req *api.PubRequest) (resp *api.PubResponse, err error) {
+	fmt.Println(req)
 
+	return &api.PubResponse{Ret: true}, nil
 }
 
 func (c *Consumer) Pingpong(ctx context.Context, req *api.PingPongRequest) (resp *api.PingPongResponse, err error) {

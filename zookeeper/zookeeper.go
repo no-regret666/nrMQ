@@ -22,7 +22,7 @@ type ZkInfo struct {
 	Root      string
 }
 
-func NewZK(info *ZkInfo) *ZK {
+func NewZK(info ZkInfo) *ZK {
 	conn, _, err := zk.Connect(info.HostPorts, time.Duration(info.Timeout)*time.Second)
 	if err != nil {
 		logger.DEBUG(logger.DError, "%v\n", err.Error())

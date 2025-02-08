@@ -34,6 +34,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
+	"Pull": kitex.NewMethodInfo(
+		pullHandler,
+		newServer_OperationsPullArgs,
+		newServer_OperationsPullResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
 }
 
 var (
@@ -154,6 +161,24 @@ func newServer_OperationsStartToGetResult() interface{} {
 	return api.NewServer_OperationsStartToGetResult()
 }
 
+func pullHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.Server_OperationsPullArgs)
+	realResult := result.(*api.Server_OperationsPullResult)
+	success, err := handler.(api.Server_Operations).Pull(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newServer_OperationsPullArgs() interface{} {
+	return api.NewServer_OperationsPullArgs()
+}
+
+func newServer_OperationsPullResult() interface{} {
+	return api.NewServer_OperationsPullResult()
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -189,6 +214,16 @@ func (p *kClient) StartToGet(ctx context.Context, req *api.InfoGetRequest) (r *a
 	_args.Req = req
 	var _result api.Server_OperationsStartToGetResult
 	if err = p.c.Call(ctx, "StartToGet", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) Pull(ctx context.Context, req *api.PullRequest) (r *api.PullResponse, err error) {
+	var _args api.Server_OperationsPullArgs
+	_args.Req = req
+	var _result api.Server_OperationsPullResult
+	if err = p.c.Call(ctx, "Pull", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

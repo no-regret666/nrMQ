@@ -38,10 +38,29 @@ struct InfoGetResponse {
     1: bool ret
 }
 
+struct PullRequest {
+    1: string consumer
+    2: string topic
+    3: string key
+    4: i64 offset
+    5: i8 size
+    6: i8 option
+}
+
+struct PullResponse {
+    1: binary Msgs
+    2: bool Ret
+    3: i64 Start_index
+    4: i64 End_index
+    5: i8 Size
+    6: string Err
+}
+
 service Server_Operations {
     PushResponse push(1: PushRequest req)
     InfoResponse ConInfo(1: InfoRequest req)
     InfoGetResponse StartToGet(1: InfoGetRequest req)
+    PullResponse Pull(1: PullRequest req)
 }
 
 struct CreateTopicRequest {
