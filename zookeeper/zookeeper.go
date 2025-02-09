@@ -173,3 +173,152 @@ func (z *ZK) RegisterNode(znode interface{}) (err error) {
 
 	return nil
 }
+
+func (z *ZK) UpdatePartitionNode(pnode PartitionNode) error {
+	path := z.TopicRoot + "/" + pnode.TopicName + "/partitions/" + pnode.Name
+	ok, _, err := z.conn.Exists(path)
+	if !ok {
+		return err
+	}
+	data, err := json.Marshal(pnode)
+	if err != nil {
+		return err
+	}
+	_, sate, _ := z.conn.Get(path)
+	_, err = z.conn.Set(path, data, sate.Version)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (z *ZK) UpdateBlockNode(bnode BlockNode) error {
+	path := z.TopicRoot + "/" + bnode.TopicName + "/partitions/" + bnode.PartitionName + "/" + bnode.Name
+
+	ok, _, err := z.conn.Exists(path)
+	if !ok {
+		return err
+	}
+	data, err := json.Marshal(bnode)
+	if err != nil {
+		return err
+	}
+	_, sate, _ := z.conn.Get(path)
+	_, err = z.conn.Set(path, data, sate.Version)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (z *ZK) GetPartState(topic_name, part_name string) (PartitionNode, error) {
+	var node PartitionNode
+	path := z.TopicRoot + "/" + topic_name + "/Partitions/" + part_name
+	ok, _, err := z.conn.Exists(path)
+	if !ok {
+		return node, err
+	}
+	data, _, _ := z.conn.Get(path)
+
+	err = json.Unmarshal(data, &node)
+
+	return node, nil
+}
+
+func (z *ZK) CreateState(name string) error {
+	path := z.TopicRoot + "/" + name + "/state"
+	ok, _, err := z.conn.Exists(path)
+	logger.DEBUG(logger.DLog, "create broker state %v ok %v\n", path, ok)
+	if ok {
+		return err
+	}
+	_, err = z.conn.Create(path, nil, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type Part struct {
+	TopicName     string
+	PartName      string
+	BrokerName    string
+	BrokHost_Port string
+	RaftHost_Port string
+	PTP_index     int64
+	Filename      string
+	Err           string
+}
+
+// 检查broker是否在线
+func (z *ZK) CheckBroker(BrokerName string) bool {
+	path := z.BrokerRoot + "/" + BrokerName + "/state"
+	ok, _, _ := z.conn.Exists(path)
+	logger.DEBUG(logger.DLog, "state(%v) path is %v\n", ok, path)
+	return ok
+}
+
+func (z *ZK) GetBrokers(topic string) ([]Part, error) {
+	path := z.TopicRoot + "/" + topic + "/" + "Partitions"
+	ok, _, err := z.conn.Exists(path)
+	if !ok || err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return nil, err
+	}
+
+	var parts []Part
+	partitions, _, _ := z.conn.Children(path)
+	for _, part := range partitions {
+
+	}
+}
+
+func (z *ZK) GetBlockSize(topic_name, part_name string) (int, error) {
+	path := z.TopicRoot + "/" + topic_name + "/Partitions/" + part_name
+	ok, _, err := z.conn.Exists(path)
+	if !ok {
+		return 0, err
+	}
+
+	parts, _, err := z.conn.Children(path)
+	if err != nil {
+		return 0, err
+	}
+	return len(parts), nil
+}
+
+func (z *ZK) GetBrokerNode(name string) (BrokerNode, error) {
+	path := z.BrokerRoot + "/" + name
+	var bronode BrokerNode
+	ok, _, err := z.conn.Exists(path)
+	if !ok {
+		return bronode, err
+	}
+	data, _, _ := z.conn.Get(path)
+	err = json.Unmarshal(data, &bronode)
+	return bronode, nil
+}
+
+func (z *ZK) GetPartitionNode(path string) (PartitionNode, error) {
+	var pnode PartitionNode
+	ok, _, err := z.conn.Exists(path)
+	if !ok {
+		return pnode, err
+	}
+	data, _, _ := z.conn.Get(path)
+	err = json.Unmarshal(data, &pnode)
+
+	return pnode, nil
+}
+
+func (z *ZK) GetBlockNode(path string) (BlockNode, error) {
+	var blocknode BlockNode
+	data, _, err := z.conn.Get(path)
+	if err != nil {
+		logger.DEBUG(logger.DError, "the block path is %v err is %v\n", path, err.Error())
+		return blocknode, err
+	}
+	json.Unmarshal(data, &blocknode)
+	return blocknode, nil
+}
