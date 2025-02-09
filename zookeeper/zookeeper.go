@@ -274,6 +274,56 @@ func (z *ZK) GetBrokers(topic string) ([]Part, error) {
 	}
 }
 
+func (z *ZK) GetBroker(topic, part string, offset int64) (parts []Part, err error) {
+	part_path := z.TopicRoot + "/" + topic + "/Partitions/" + part
+	ok, _, err := z.conn.Exists(part_path)
+	if !ok || err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return nil, err
+	}
+
+}
+
+type StartGetInfo struct {
+	CliName       string
+	TopicName     string
+	PartitionName string
+	Option        int8
+}
+
+func (z *ZK) CheckSub(info StartGetInfo) bool {
+
+	//检查该consumer是否订阅了该topic或partition
+
+	return true
+}
+
+func (z *ZK) GetPartNowBrokerNode(topic_name, part_name string) (BrokerNode, BlockNode, int8, error) {
+	now_block_path := z.TopicRoot + "/" + topic_name + "/partitions/" + part_name + "/" + "NowBlock"
+	for {
+		NowBlock, err := z.GetBlockNode(now_block_path)
+		if err != nil {
+			logger.DEBUG(logger.DError, "get block node fail,path %v err is %v\n", now_block_path, err.Error())
+			return BrokerNode{}, BlockNode{}, 0, err
+		}
+
+		Broker, err := z.GetBrokerNode(NowBlock.LeaderBroker)
+		if err != nil {
+			logger.DEBUG(logger.DError, "get broker node fail,path %v err is %v\n", NowBlock.LeaderBroker, err.Error())
+			return BrokerNode{}, BlockNode{}, 1, err
+		}
+		logger.DEBUG(logger.DLog, "the Leader Broker is %v\n", NowBlock.LeaderBroker)
+
+		ret := z.CheckBroker(Broker.Name)
+		if ret {
+			return Broker, NowBlock, 2, nil
+		} else { //若Leader不在线，则等待一秒继续请求
+			logger.DEBUG(logger.DLog, "the broker %v is not online\n", Broker.Name)
+			time.Sleep(time.Second * 1)
+		}
+	}
+}
+
 func (z *ZK) GetBlockSize(topic_name, part_name string) (int, error) {
 	path := z.TopicRoot + "/" + topic_name + "/Partitions/" + part_name
 	ok, _, err := z.conn.Exists(path)

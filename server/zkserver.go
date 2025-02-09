@@ -70,6 +70,7 @@ func (z *ZKServer) HandleBroInfo(bro_name, bro_H_P string) error {
 
 func (z *ZKServer) ProGetBroker(info Info_in) Info_out {
 	//查询zookeeper,获得broker的host_port和name，若未连接则建立连接
+
 }
 
 func (z *ZKServer) CreateTopic(info Info_in) Info_out {
