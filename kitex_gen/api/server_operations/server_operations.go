@@ -41,6 +41,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
+	"PrepareAccept": kitex.NewMethodInfo(
+		prepareAcceptHandler,
+		newServer_OperationsPrepareAcceptArgs,
+		newServer_OperationsPrepareAcceptResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
 }
 
 var (
@@ -179,6 +186,24 @@ func newServer_OperationsPullResult() interface{} {
 	return api.NewServer_OperationsPullResult()
 }
 
+func prepareAcceptHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.Server_OperationsPrepareAcceptArgs)
+	realResult := result.(*api.Server_OperationsPrepareAcceptResult)
+	success, err := handler.(api.Server_Operations).PrepareAccept(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newServer_OperationsPrepareAcceptArgs() interface{} {
+	return api.NewServer_OperationsPrepareAcceptArgs()
+}
+
+func newServer_OperationsPrepareAcceptResult() interface{} {
+	return api.NewServer_OperationsPrepareAcceptResult()
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -224,6 +249,16 @@ func (p *kClient) Pull(ctx context.Context, req *api.PullRequest) (r *api.PullRe
 	_args.Req = req
 	var _result api.Server_OperationsPullResult
 	if err = p.c.Call(ctx, "Pull", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) PrepareAccept(ctx context.Context, req *api.PrepareAcceptRequest) (r *api.PrepareAcceptResponse, err error) {
+	var _args api.Server_OperationsPrepareAcceptArgs
+	_args.Req = req
+	var _result api.Server_OperationsPrepareAcceptResult
+	if err = p.c.Call(ctx, "PrepareAccept", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
