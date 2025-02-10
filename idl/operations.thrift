@@ -56,11 +56,52 @@ struct PullResponse {
     6: string Err
 }
 
+//设置某个Partition接收信息的文件和队列
+struct StartGetMessageRequest {
+    1: string topic_name
+    2: string part_name
+    3: string file_name
+}
+
+struct StartGetMessageResponse {
+    1: bool ret
+}
+
+//关闭某个Partition，停止接收信息
+struct CloseGetMessageRequest {
+    1: string topic_name
+    2: string part_name
+    3: string file_name
+    4: string new_name
+}
+
+struct CloseGetMessageResponse {
+    1: bool ret
+}
+
+//zkserver
+struct PrepareAcceptRequest {
+    1: string topic_name
+    2: string part_name
+    3: string file_name
+}
+
+struct PrepareAcceptResponse {
+    1: bool ret
+    2: string err
+}
+
 service Server_Operations {
+    //producer used
     PushResponse push(1: PushRequest req)
+
+    //consumer used
     InfoResponse ConInfo(1: InfoRequest req)
     InfoGetResponse StartToGet(1: InfoGetRequest req)
     PullResponse Pull(1: PullRequest req)
+
+    //zkserver used this rpc to request broker server
+    PrepareAcceptResponse PrepareAccept(1: PrepareAcceptRequest req)
 }
 
 struct CreateTopicRequest {

@@ -372,3 +372,67 @@ func (z *ZK) GetBlockNode(path string) (BlockNode, error) {
 	json.Unmarshal(data, &blocknode)
 	return blocknode, nil
 }
+
+func (z *ZK) GetDuplicateNodes(TopicName, PartName, BlockName string) (nodes []DuplicateNode) {
+	BlockPath := z.TopicRoot + "/" + TopicName + "/Partitions/" + PartName + "/" + BlockName
+	Dups, _, _ := z.conn.Children(BlockPath)
+
+	for _, dupName := range Dups {
+		DupNode, err := z.GetDuplicateNode(BlockPath + "/" + dupName)
+		if err != nil {
+			logger.DEBUG(logger.DError, "the dup %v/%v not exists\n", BlockPath, dupName)
+		} else {
+			nodes = append(nodes, DupNode)
+		}
+	}
+	return nodes
+}
+
+func (z *ZK) GetDuplicateNode(path string) (DuplicateNode, error) {
+	var dupnode DuplicateNode
+	ok, _, err := z.conn.Exists(path)
+	if !ok {
+		return dupnode, err
+	}
+	data, _, _ := z.conn.Get(path)
+	json.Unmarshal(data, &dupnode)
+	return dupnode, nil
+}
+
+func (z *ZK) DeleteDupNode(TopicName, PartName, BlockNode, DupName string) (ret string, err error) {
+	path := z.TopicRoot + "/" + TopicName + "/Partitions/" + PartName + "/" + BlockNode + "/" + DupName
+
+	_, sate, _ := z.conn.Get(path)
+	err = z.conn.Delete(path, sate.Version)
+	if err != nil {
+		ret = "delete dupnode fail"
+	}
+	return ret, err
+}
+
+func (z *ZK) UpdateDupNode(dnode DuplicateNode) (ret string, err error) {
+	path := z.TopicRoot + "/" + dnode.TopicName + "/Partitions/" + dnode.PartitionName + "/" + dnode.BlockName + "/" + dnode.Name
+
+	data_node, err := json.Marshal(dnode)
+	if err != nil {
+		ret = "DupNode turn byte fail"
+		return ret, err
+	}
+
+	_, sate, _ := z.conn.Get(path)
+	_, err = z.conn.Set(path, data_node, sate.Version)
+	if err != nil {
+		ret = "DupNode Update fail"
+	}
+	return ret, err
+}
+
+func (z *ZK) GetPartBlockIndex(TopicName, PartName string) (int64, error) {
+	str := z.TopicRoot + "/" + TopicName + "/Partitions/" + PartName
+	node, err := z.GetPartitionNode(str)
+	if err != nil {
+		logger.DEBUG(logger.DError, "get partition node fail,path is %v,err is %v\n", str, err.Error())
+		return 0, err
+	}
+	return node.Index, nil
+}

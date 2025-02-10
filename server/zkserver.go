@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+	"encoding/json"
 	"github.com/cloudwego/kitex/client"
 	"nrMQ/kitex_gen/api/server_operations"
 	"nrMQ/logger"
@@ -70,7 +72,52 @@ func (z *ZKServer) HandleBroInfo(bro_name, bro_H_P string) error {
 
 func (z *ZKServer) ProGetBroker(info Info_in) Info_out {
 	//查询zookeeper,获得broker的host_port和name，若未连接则建立连接
+	broker, block, _, err := z.zk.GetPartNowBrokerNode(info.topic_name, info.part_name)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+	PartitionNode, err := z.zk.GetPartState(info.topic_name, info.part_name)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
 
+	//检查该Partition的状态是否设定
+	//检查该Partition在Brokers上是否创建raft集群或fetch
+	Brokers := make(map[string]string)
+	var ret string
+	Dups := z.zk.GetDuplicateNodes(block.TopicName, block.PartitionName, block.Name)
+	for _, DupNode := range Dups {
+		BrokerNode, err := z.zk.GetBrokerNode(DupNode.BrokerName)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+		}
+		Brokers[DupNode.BrokerName] = BrokerNode.BrokHostPort
+	}
+
+	data, err := json.Marshal(Brokers)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+
+	for BrokerName, BrokerHostPort := range Brokers {
+		z.mu.RLock()
+		bro_cli, ok := z.Brokers[BrokerName]
+		z.mu.RUnlock()
+
+		//若未连接该broker
+		if !ok {
+			bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(BrokerHostPort))
+			if err != nil {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+			}
+			z.mu.Lock()
+			z.Brokers[BrokerName] = bro_cli
+			z.mu.Unlock()
+		}
+
+		//通知broker检查topic/partition，并创建队列准备接收消息
+		resp, err := bro_cli.PrepareAccept(context.Background())
+	}
 }
 
 func (z *ZKServer) CreateTopic(info Info_in) Info_out {
