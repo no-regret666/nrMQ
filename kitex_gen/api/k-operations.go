@@ -6360,7 +6360,7 @@ func (p *Server_OperationsPrepareAcceptResult) field0Length() int {
 	return l
 }
 
-func (p *ZkServer_OperationCreateTopicArgs) FastRead(buf []byte) (int, error) {
+func (p *ZkServer_OperationsCreateTopicArgs) FastRead(buf []byte) (int, error) {
 
 	var err error
 	var offset int
@@ -6404,12 +6404,12 @@ func (p *ZkServer_OperationCreateTopicArgs) FastRead(buf []byte) (int, error) {
 ReadFieldBeginError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationCreateTopicArgs[fieldId]), err)
+	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsCreateTopicArgs[fieldId]), err)
 SkipFieldError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 }
 
-func (p *ZkServer_OperationCreateTopicArgs) FastReadField1(buf []byte) (int, error) {
+func (p *ZkServer_OperationsCreateTopicArgs) FastReadField1(buf []byte) (int, error) {
 	offset := 0
 	_field := NewCreateTopicRequest()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
@@ -6421,11 +6421,11 @@ func (p *ZkServer_OperationCreateTopicArgs) FastReadField1(buf []byte) (int, err
 	return offset, nil
 }
 
-func (p *ZkServer_OperationCreateTopicArgs) FastWrite(buf []byte) int {
+func (p *ZkServer_OperationsCreateTopicArgs) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
 
-func (p *ZkServer_OperationCreateTopicArgs) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsCreateTopicArgs) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField1(buf[offset:], w)
@@ -6434,7 +6434,7 @@ func (p *ZkServer_OperationCreateTopicArgs) FastWriteNocopy(buf []byte, w thrift
 	return offset
 }
 
-func (p *ZkServer_OperationCreateTopicArgs) BLength() int {
+func (p *ZkServer_OperationsCreateTopicArgs) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field1Length()
@@ -6443,21 +6443,21 @@ func (p *ZkServer_OperationCreateTopicArgs) BLength() int {
 	return l
 }
 
-func (p *ZkServer_OperationCreateTopicArgs) fastWriteField1(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsCreateTopicArgs) fastWriteField1(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRUCT, 1)
 	offset += p.Req.FastWriteNocopy(buf[offset:], w)
 	return offset
 }
 
-func (p *ZkServer_OperationCreateTopicArgs) field1Length() int {
+func (p *ZkServer_OperationsCreateTopicArgs) field1Length() int {
 	l := 0
 	l += thrift.Binary.FieldBeginLength()
 	l += p.Req.BLength()
 	return l
 }
 
-func (p *ZkServer_OperationCreateTopicResult) FastRead(buf []byte) (int, error) {
+func (p *ZkServer_OperationsCreateTopicResult) FastRead(buf []byte) (int, error) {
 
 	var err error
 	var offset int
@@ -6501,12 +6501,12 @@ func (p *ZkServer_OperationCreateTopicResult) FastRead(buf []byte) (int, error) 
 ReadFieldBeginError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationCreateTopicResult[fieldId]), err)
+	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsCreateTopicResult[fieldId]), err)
 SkipFieldError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 }
 
-func (p *ZkServer_OperationCreateTopicResult) FastReadField0(buf []byte) (int, error) {
+func (p *ZkServer_OperationsCreateTopicResult) FastReadField0(buf []byte) (int, error) {
 	offset := 0
 	_field := NewCreateTopicResponse()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
@@ -6518,11 +6518,11 @@ func (p *ZkServer_OperationCreateTopicResult) FastReadField0(buf []byte) (int, e
 	return offset, nil
 }
 
-func (p *ZkServer_OperationCreateTopicResult) FastWrite(buf []byte) int {
+func (p *ZkServer_OperationsCreateTopicResult) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
 
-func (p *ZkServer_OperationCreateTopicResult) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsCreateTopicResult) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField0(buf[offset:], w)
@@ -6531,7 +6531,7 @@ func (p *ZkServer_OperationCreateTopicResult) FastWriteNocopy(buf []byte, w thri
 	return offset
 }
 
-func (p *ZkServer_OperationCreateTopicResult) BLength() int {
+func (p *ZkServer_OperationsCreateTopicResult) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field0Length()
@@ -6540,7 +6540,7 @@ func (p *ZkServer_OperationCreateTopicResult) BLength() int {
 	return l
 }
 
-func (p *ZkServer_OperationCreateTopicResult) fastWriteField0(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsCreateTopicResult) fastWriteField0(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p.IsSetSuccess() {
 		offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRUCT, 0)
@@ -6549,7 +6549,7 @@ func (p *ZkServer_OperationCreateTopicResult) fastWriteField0(buf []byte, w thri
 	return offset
 }
 
-func (p *ZkServer_OperationCreateTopicResult) field0Length() int {
+func (p *ZkServer_OperationsCreateTopicResult) field0Length() int {
 	l := 0
 	if p.IsSetSuccess() {
 		l += thrift.Binary.FieldBeginLength()
@@ -6558,7 +6558,7 @@ func (p *ZkServer_OperationCreateTopicResult) field0Length() int {
 	return l
 }
 
-func (p *ZkServer_OperationCreatePartArgs) FastRead(buf []byte) (int, error) {
+func (p *ZkServer_OperationsCreatePartArgs) FastRead(buf []byte) (int, error) {
 
 	var err error
 	var offset int
@@ -6602,12 +6602,12 @@ func (p *ZkServer_OperationCreatePartArgs) FastRead(buf []byte) (int, error) {
 ReadFieldBeginError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationCreatePartArgs[fieldId]), err)
+	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsCreatePartArgs[fieldId]), err)
 SkipFieldError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 }
 
-func (p *ZkServer_OperationCreatePartArgs) FastReadField1(buf []byte) (int, error) {
+func (p *ZkServer_OperationsCreatePartArgs) FastReadField1(buf []byte) (int, error) {
 	offset := 0
 	_field := NewCreatePartRequest()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
@@ -6619,11 +6619,11 @@ func (p *ZkServer_OperationCreatePartArgs) FastReadField1(buf []byte) (int, erro
 	return offset, nil
 }
 
-func (p *ZkServer_OperationCreatePartArgs) FastWrite(buf []byte) int {
+func (p *ZkServer_OperationsCreatePartArgs) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
 
-func (p *ZkServer_OperationCreatePartArgs) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsCreatePartArgs) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField1(buf[offset:], w)
@@ -6632,7 +6632,7 @@ func (p *ZkServer_OperationCreatePartArgs) FastWriteNocopy(buf []byte, w thrift.
 	return offset
 }
 
-func (p *ZkServer_OperationCreatePartArgs) BLength() int {
+func (p *ZkServer_OperationsCreatePartArgs) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field1Length()
@@ -6641,21 +6641,21 @@ func (p *ZkServer_OperationCreatePartArgs) BLength() int {
 	return l
 }
 
-func (p *ZkServer_OperationCreatePartArgs) fastWriteField1(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsCreatePartArgs) fastWriteField1(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRUCT, 1)
 	offset += p.Req.FastWriteNocopy(buf[offset:], w)
 	return offset
 }
 
-func (p *ZkServer_OperationCreatePartArgs) field1Length() int {
+func (p *ZkServer_OperationsCreatePartArgs) field1Length() int {
 	l := 0
 	l += thrift.Binary.FieldBeginLength()
 	l += p.Req.BLength()
 	return l
 }
 
-func (p *ZkServer_OperationCreatePartResult) FastRead(buf []byte) (int, error) {
+func (p *ZkServer_OperationsCreatePartResult) FastRead(buf []byte) (int, error) {
 
 	var err error
 	var offset int
@@ -6699,12 +6699,12 @@ func (p *ZkServer_OperationCreatePartResult) FastRead(buf []byte) (int, error) {
 ReadFieldBeginError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationCreatePartResult[fieldId]), err)
+	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsCreatePartResult[fieldId]), err)
 SkipFieldError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 }
 
-func (p *ZkServer_OperationCreatePartResult) FastReadField0(buf []byte) (int, error) {
+func (p *ZkServer_OperationsCreatePartResult) FastReadField0(buf []byte) (int, error) {
 	offset := 0
 	_field := NewCreatePartResponse()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
@@ -6716,11 +6716,11 @@ func (p *ZkServer_OperationCreatePartResult) FastReadField0(buf []byte) (int, er
 	return offset, nil
 }
 
-func (p *ZkServer_OperationCreatePartResult) FastWrite(buf []byte) int {
+func (p *ZkServer_OperationsCreatePartResult) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
 
-func (p *ZkServer_OperationCreatePartResult) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsCreatePartResult) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField0(buf[offset:], w)
@@ -6729,7 +6729,7 @@ func (p *ZkServer_OperationCreatePartResult) FastWriteNocopy(buf []byte, w thrif
 	return offset
 }
 
-func (p *ZkServer_OperationCreatePartResult) BLength() int {
+func (p *ZkServer_OperationsCreatePartResult) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field0Length()
@@ -6738,7 +6738,7 @@ func (p *ZkServer_OperationCreatePartResult) BLength() int {
 	return l
 }
 
-func (p *ZkServer_OperationCreatePartResult) fastWriteField0(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsCreatePartResult) fastWriteField0(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p.IsSetSuccess() {
 		offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRUCT, 0)
@@ -6747,7 +6747,7 @@ func (p *ZkServer_OperationCreatePartResult) fastWriteField0(buf []byte, w thrif
 	return offset
 }
 
-func (p *ZkServer_OperationCreatePartResult) field0Length() int {
+func (p *ZkServer_OperationsCreatePartResult) field0Length() int {
 	l := 0
 	if p.IsSetSuccess() {
 		l += thrift.Binary.FieldBeginLength()
@@ -6756,7 +6756,7 @@ func (p *ZkServer_OperationCreatePartResult) field0Length() int {
 	return l
 }
 
-func (p *ZkServer_OperationProGetBrokerArgs) FastRead(buf []byte) (int, error) {
+func (p *ZkServer_OperationsProGetBrokerArgs) FastRead(buf []byte) (int, error) {
 
 	var err error
 	var offset int
@@ -6800,12 +6800,12 @@ func (p *ZkServer_OperationProGetBrokerArgs) FastRead(buf []byte) (int, error) {
 ReadFieldBeginError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationProGetBrokerArgs[fieldId]), err)
+	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsProGetBrokerArgs[fieldId]), err)
 SkipFieldError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 }
 
-func (p *ZkServer_OperationProGetBrokerArgs) FastReadField1(buf []byte) (int, error) {
+func (p *ZkServer_OperationsProGetBrokerArgs) FastReadField1(buf []byte) (int, error) {
 	offset := 0
 	_field := NewProGetBrokRequest()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
@@ -6817,11 +6817,11 @@ func (p *ZkServer_OperationProGetBrokerArgs) FastReadField1(buf []byte) (int, er
 	return offset, nil
 }
 
-func (p *ZkServer_OperationProGetBrokerArgs) FastWrite(buf []byte) int {
+func (p *ZkServer_OperationsProGetBrokerArgs) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
 
-func (p *ZkServer_OperationProGetBrokerArgs) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsProGetBrokerArgs) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField1(buf[offset:], w)
@@ -6830,7 +6830,7 @@ func (p *ZkServer_OperationProGetBrokerArgs) FastWriteNocopy(buf []byte, w thrif
 	return offset
 }
 
-func (p *ZkServer_OperationProGetBrokerArgs) BLength() int {
+func (p *ZkServer_OperationsProGetBrokerArgs) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field1Length()
@@ -6839,21 +6839,21 @@ func (p *ZkServer_OperationProGetBrokerArgs) BLength() int {
 	return l
 }
 
-func (p *ZkServer_OperationProGetBrokerArgs) fastWriteField1(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsProGetBrokerArgs) fastWriteField1(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRUCT, 1)
 	offset += p.Req.FastWriteNocopy(buf[offset:], w)
 	return offset
 }
 
-func (p *ZkServer_OperationProGetBrokerArgs) field1Length() int {
+func (p *ZkServer_OperationsProGetBrokerArgs) field1Length() int {
 	l := 0
 	l += thrift.Binary.FieldBeginLength()
 	l += p.Req.BLength()
 	return l
 }
 
-func (p *ZkServer_OperationProGetBrokerResult) FastRead(buf []byte) (int, error) {
+func (p *ZkServer_OperationsProGetBrokerResult) FastRead(buf []byte) (int, error) {
 
 	var err error
 	var offset int
@@ -6897,12 +6897,12 @@ func (p *ZkServer_OperationProGetBrokerResult) FastRead(buf []byte) (int, error)
 ReadFieldBeginError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationProGetBrokerResult[fieldId]), err)
+	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsProGetBrokerResult[fieldId]), err)
 SkipFieldError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 }
 
-func (p *ZkServer_OperationProGetBrokerResult) FastReadField0(buf []byte) (int, error) {
+func (p *ZkServer_OperationsProGetBrokerResult) FastReadField0(buf []byte) (int, error) {
 	offset := 0
 	_field := NewProGetBrokResponse()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
@@ -6914,11 +6914,11 @@ func (p *ZkServer_OperationProGetBrokerResult) FastReadField0(buf []byte) (int, 
 	return offset, nil
 }
 
-func (p *ZkServer_OperationProGetBrokerResult) FastWrite(buf []byte) int {
+func (p *ZkServer_OperationsProGetBrokerResult) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
 
-func (p *ZkServer_OperationProGetBrokerResult) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsProGetBrokerResult) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField0(buf[offset:], w)
@@ -6927,7 +6927,7 @@ func (p *ZkServer_OperationProGetBrokerResult) FastWriteNocopy(buf []byte, w thr
 	return offset
 }
 
-func (p *ZkServer_OperationProGetBrokerResult) BLength() int {
+func (p *ZkServer_OperationsProGetBrokerResult) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field0Length()
@@ -6936,7 +6936,7 @@ func (p *ZkServer_OperationProGetBrokerResult) BLength() int {
 	return l
 }
 
-func (p *ZkServer_OperationProGetBrokerResult) fastWriteField0(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsProGetBrokerResult) fastWriteField0(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p.IsSetSuccess() {
 		offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRUCT, 0)
@@ -6945,7 +6945,7 @@ func (p *ZkServer_OperationProGetBrokerResult) fastWriteField0(buf []byte, w thr
 	return offset
 }
 
-func (p *ZkServer_OperationProGetBrokerResult) field0Length() int {
+func (p *ZkServer_OperationsProGetBrokerResult) field0Length() int {
 	l := 0
 	if p.IsSetSuccess() {
 		l += thrift.Binary.FieldBeginLength()
@@ -6954,7 +6954,7 @@ func (p *ZkServer_OperationProGetBrokerResult) field0Length() int {
 	return l
 }
 
-func (p *ZkServer_OperationSetPartitionStateArgs) FastRead(buf []byte) (int, error) {
+func (p *ZkServer_OperationsSetPartitionStateArgs) FastRead(buf []byte) (int, error) {
 
 	var err error
 	var offset int
@@ -6998,12 +6998,12 @@ func (p *ZkServer_OperationSetPartitionStateArgs) FastRead(buf []byte) (int, err
 ReadFieldBeginError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationSetPartitionStateArgs[fieldId]), err)
+	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsSetPartitionStateArgs[fieldId]), err)
 SkipFieldError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 }
 
-func (p *ZkServer_OperationSetPartitionStateArgs) FastReadField1(buf []byte) (int, error) {
+func (p *ZkServer_OperationsSetPartitionStateArgs) FastReadField1(buf []byte) (int, error) {
 	offset := 0
 	_field := NewSetPartitionStateRequest()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
@@ -7015,11 +7015,11 @@ func (p *ZkServer_OperationSetPartitionStateArgs) FastReadField1(buf []byte) (in
 	return offset, nil
 }
 
-func (p *ZkServer_OperationSetPartitionStateArgs) FastWrite(buf []byte) int {
+func (p *ZkServer_OperationsSetPartitionStateArgs) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
 
-func (p *ZkServer_OperationSetPartitionStateArgs) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsSetPartitionStateArgs) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField1(buf[offset:], w)
@@ -7028,7 +7028,7 @@ func (p *ZkServer_OperationSetPartitionStateArgs) FastWriteNocopy(buf []byte, w 
 	return offset
 }
 
-func (p *ZkServer_OperationSetPartitionStateArgs) BLength() int {
+func (p *ZkServer_OperationsSetPartitionStateArgs) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field1Length()
@@ -7037,21 +7037,21 @@ func (p *ZkServer_OperationSetPartitionStateArgs) BLength() int {
 	return l
 }
 
-func (p *ZkServer_OperationSetPartitionStateArgs) fastWriteField1(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsSetPartitionStateArgs) fastWriteField1(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRUCT, 1)
 	offset += p.Req.FastWriteNocopy(buf[offset:], w)
 	return offset
 }
 
-func (p *ZkServer_OperationSetPartitionStateArgs) field1Length() int {
+func (p *ZkServer_OperationsSetPartitionStateArgs) field1Length() int {
 	l := 0
 	l += thrift.Binary.FieldBeginLength()
 	l += p.Req.BLength()
 	return l
 }
 
-func (p *ZkServer_OperationSetPartitionStateResult) FastRead(buf []byte) (int, error) {
+func (p *ZkServer_OperationsSetPartitionStateResult) FastRead(buf []byte) (int, error) {
 
 	var err error
 	var offset int
@@ -7095,12 +7095,12 @@ func (p *ZkServer_OperationSetPartitionStateResult) FastRead(buf []byte) (int, e
 ReadFieldBeginError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationSetPartitionStateResult[fieldId]), err)
+	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsSetPartitionStateResult[fieldId]), err)
 SkipFieldError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 }
 
-func (p *ZkServer_OperationSetPartitionStateResult) FastReadField0(buf []byte) (int, error) {
+func (p *ZkServer_OperationsSetPartitionStateResult) FastReadField0(buf []byte) (int, error) {
 	offset := 0
 	_field := NewSetPartitionStateResponse()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
@@ -7112,11 +7112,11 @@ func (p *ZkServer_OperationSetPartitionStateResult) FastReadField0(buf []byte) (
 	return offset, nil
 }
 
-func (p *ZkServer_OperationSetPartitionStateResult) FastWrite(buf []byte) int {
+func (p *ZkServer_OperationsSetPartitionStateResult) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
 
-func (p *ZkServer_OperationSetPartitionStateResult) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsSetPartitionStateResult) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField0(buf[offset:], w)
@@ -7125,7 +7125,7 @@ func (p *ZkServer_OperationSetPartitionStateResult) FastWriteNocopy(buf []byte, 
 	return offset
 }
 
-func (p *ZkServer_OperationSetPartitionStateResult) BLength() int {
+func (p *ZkServer_OperationsSetPartitionStateResult) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field0Length()
@@ -7134,7 +7134,7 @@ func (p *ZkServer_OperationSetPartitionStateResult) BLength() int {
 	return l
 }
 
-func (p *ZkServer_OperationSetPartitionStateResult) fastWriteField0(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsSetPartitionStateResult) fastWriteField0(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p.IsSetSuccess() {
 		offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRUCT, 0)
@@ -7143,7 +7143,7 @@ func (p *ZkServer_OperationSetPartitionStateResult) fastWriteField0(buf []byte, 
 	return offset
 }
 
-func (p *ZkServer_OperationSetPartitionStateResult) field0Length() int {
+func (p *ZkServer_OperationsSetPartitionStateResult) field0Length() int {
 	l := 0
 	if p.IsSetSuccess() {
 		l += thrift.Binary.FieldBeginLength()
@@ -7152,7 +7152,7 @@ func (p *ZkServer_OperationSetPartitionStateResult) field0Length() int {
 	return l
 }
 
-func (p *ZkServer_OperationSubArgs) FastRead(buf []byte) (int, error) {
+func (p *ZkServer_OperationsSubArgs) FastRead(buf []byte) (int, error) {
 
 	var err error
 	var offset int
@@ -7196,12 +7196,12 @@ func (p *ZkServer_OperationSubArgs) FastRead(buf []byte) (int, error) {
 ReadFieldBeginError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationSubArgs[fieldId]), err)
+	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsSubArgs[fieldId]), err)
 SkipFieldError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 }
 
-func (p *ZkServer_OperationSubArgs) FastReadField1(buf []byte) (int, error) {
+func (p *ZkServer_OperationsSubArgs) FastReadField1(buf []byte) (int, error) {
 	offset := 0
 	_field := NewSubRequest()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
@@ -7213,11 +7213,11 @@ func (p *ZkServer_OperationSubArgs) FastReadField1(buf []byte) (int, error) {
 	return offset, nil
 }
 
-func (p *ZkServer_OperationSubArgs) FastWrite(buf []byte) int {
+func (p *ZkServer_OperationsSubArgs) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
 
-func (p *ZkServer_OperationSubArgs) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsSubArgs) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField1(buf[offset:], w)
@@ -7226,7 +7226,7 @@ func (p *ZkServer_OperationSubArgs) FastWriteNocopy(buf []byte, w thrift.NocopyW
 	return offset
 }
 
-func (p *ZkServer_OperationSubArgs) BLength() int {
+func (p *ZkServer_OperationsSubArgs) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field1Length()
@@ -7235,21 +7235,21 @@ func (p *ZkServer_OperationSubArgs) BLength() int {
 	return l
 }
 
-func (p *ZkServer_OperationSubArgs) fastWriteField1(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsSubArgs) fastWriteField1(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRUCT, 1)
 	offset += p.Req.FastWriteNocopy(buf[offset:], w)
 	return offset
 }
 
-func (p *ZkServer_OperationSubArgs) field1Length() int {
+func (p *ZkServer_OperationsSubArgs) field1Length() int {
 	l := 0
 	l += thrift.Binary.FieldBeginLength()
 	l += p.Req.BLength()
 	return l
 }
 
-func (p *ZkServer_OperationSubResult) FastRead(buf []byte) (int, error) {
+func (p *ZkServer_OperationsSubResult) FastRead(buf []byte) (int, error) {
 
 	var err error
 	var offset int
@@ -7293,12 +7293,12 @@ func (p *ZkServer_OperationSubResult) FastRead(buf []byte) (int, error) {
 ReadFieldBeginError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationSubResult[fieldId]), err)
+	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsSubResult[fieldId]), err)
 SkipFieldError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 }
 
-func (p *ZkServer_OperationSubResult) FastReadField0(buf []byte) (int, error) {
+func (p *ZkServer_OperationsSubResult) FastReadField0(buf []byte) (int, error) {
 	offset := 0
 	_field := NewSubResponse()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
@@ -7310,11 +7310,11 @@ func (p *ZkServer_OperationSubResult) FastReadField0(buf []byte) (int, error) {
 	return offset, nil
 }
 
-func (p *ZkServer_OperationSubResult) FastWrite(buf []byte) int {
+func (p *ZkServer_OperationsSubResult) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
 
-func (p *ZkServer_OperationSubResult) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsSubResult) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField0(buf[offset:], w)
@@ -7323,7 +7323,7 @@ func (p *ZkServer_OperationSubResult) FastWriteNocopy(buf []byte, w thrift.Nocop
 	return offset
 }
 
-func (p *ZkServer_OperationSubResult) BLength() int {
+func (p *ZkServer_OperationsSubResult) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field0Length()
@@ -7332,7 +7332,7 @@ func (p *ZkServer_OperationSubResult) BLength() int {
 	return l
 }
 
-func (p *ZkServer_OperationSubResult) fastWriteField0(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsSubResult) fastWriteField0(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p.IsSetSuccess() {
 		offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRUCT, 0)
@@ -7341,7 +7341,7 @@ func (p *ZkServer_OperationSubResult) fastWriteField0(buf []byte, w thrift.Nocop
 	return offset
 }
 
-func (p *ZkServer_OperationSubResult) field0Length() int {
+func (p *ZkServer_OperationsSubResult) field0Length() int {
 	l := 0
 	if p.IsSetSuccess() {
 		l += thrift.Binary.FieldBeginLength()
@@ -7350,7 +7350,7 @@ func (p *ZkServer_OperationSubResult) field0Length() int {
 	return l
 }
 
-func (p *ZkServer_OperationConStartGetBrokerArgs) FastRead(buf []byte) (int, error) {
+func (p *ZkServer_OperationsConStartGetBrokerArgs) FastRead(buf []byte) (int, error) {
 
 	var err error
 	var offset int
@@ -7394,12 +7394,12 @@ func (p *ZkServer_OperationConStartGetBrokerArgs) FastRead(buf []byte) (int, err
 ReadFieldBeginError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationConStartGetBrokerArgs[fieldId]), err)
+	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsConStartGetBrokerArgs[fieldId]), err)
 SkipFieldError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 }
 
-func (p *ZkServer_OperationConStartGetBrokerArgs) FastReadField1(buf []byte) (int, error) {
+func (p *ZkServer_OperationsConStartGetBrokerArgs) FastReadField1(buf []byte) (int, error) {
 	offset := 0
 	_field := NewConStartGetBrokRequest()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
@@ -7411,11 +7411,11 @@ func (p *ZkServer_OperationConStartGetBrokerArgs) FastReadField1(buf []byte) (in
 	return offset, nil
 }
 
-func (p *ZkServer_OperationConStartGetBrokerArgs) FastWrite(buf []byte) int {
+func (p *ZkServer_OperationsConStartGetBrokerArgs) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
 
-func (p *ZkServer_OperationConStartGetBrokerArgs) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsConStartGetBrokerArgs) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField1(buf[offset:], w)
@@ -7424,7 +7424,7 @@ func (p *ZkServer_OperationConStartGetBrokerArgs) FastWriteNocopy(buf []byte, w 
 	return offset
 }
 
-func (p *ZkServer_OperationConStartGetBrokerArgs) BLength() int {
+func (p *ZkServer_OperationsConStartGetBrokerArgs) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field1Length()
@@ -7433,21 +7433,21 @@ func (p *ZkServer_OperationConStartGetBrokerArgs) BLength() int {
 	return l
 }
 
-func (p *ZkServer_OperationConStartGetBrokerArgs) fastWriteField1(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsConStartGetBrokerArgs) fastWriteField1(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRUCT, 1)
 	offset += p.Req.FastWriteNocopy(buf[offset:], w)
 	return offset
 }
 
-func (p *ZkServer_OperationConStartGetBrokerArgs) field1Length() int {
+func (p *ZkServer_OperationsConStartGetBrokerArgs) field1Length() int {
 	l := 0
 	l += thrift.Binary.FieldBeginLength()
 	l += p.Req.BLength()
 	return l
 }
 
-func (p *ZkServer_OperationConStartGetBrokerResult) FastRead(buf []byte) (int, error) {
+func (p *ZkServer_OperationsConStartGetBrokerResult) FastRead(buf []byte) (int, error) {
 
 	var err error
 	var offset int
@@ -7491,12 +7491,12 @@ func (p *ZkServer_OperationConStartGetBrokerResult) FastRead(buf []byte) (int, e
 ReadFieldBeginError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationConStartGetBrokerResult[fieldId]), err)
+	return offset, thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsConStartGetBrokerResult[fieldId]), err)
 SkipFieldError:
 	return offset, thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 }
 
-func (p *ZkServer_OperationConStartGetBrokerResult) FastReadField0(buf []byte) (int, error) {
+func (p *ZkServer_OperationsConStartGetBrokerResult) FastReadField0(buf []byte) (int, error) {
 	offset := 0
 	_field := NewConStartGetBrokResponse()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
@@ -7508,11 +7508,11 @@ func (p *ZkServer_OperationConStartGetBrokerResult) FastReadField0(buf []byte) (
 	return offset, nil
 }
 
-func (p *ZkServer_OperationConStartGetBrokerResult) FastWrite(buf []byte) int {
+func (p *ZkServer_OperationsConStartGetBrokerResult) FastWrite(buf []byte) int {
 	return p.FastWriteNocopy(buf, nil)
 }
 
-func (p *ZkServer_OperationConStartGetBrokerResult) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsConStartGetBrokerResult) FastWriteNocopy(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p != nil {
 		offset += p.fastWriteField0(buf[offset:], w)
@@ -7521,7 +7521,7 @@ func (p *ZkServer_OperationConStartGetBrokerResult) FastWriteNocopy(buf []byte, 
 	return offset
 }
 
-func (p *ZkServer_OperationConStartGetBrokerResult) BLength() int {
+func (p *ZkServer_OperationsConStartGetBrokerResult) BLength() int {
 	l := 0
 	if p != nil {
 		l += p.field0Length()
@@ -7530,7 +7530,7 @@ func (p *ZkServer_OperationConStartGetBrokerResult) BLength() int {
 	return l
 }
 
-func (p *ZkServer_OperationConStartGetBrokerResult) fastWriteField0(buf []byte, w thrift.NocopyWriter) int {
+func (p *ZkServer_OperationsConStartGetBrokerResult) fastWriteField0(buf []byte, w thrift.NocopyWriter) int {
 	offset := 0
 	if p.IsSetSuccess() {
 		offset += thrift.Binary.WriteFieldBegin(buf[offset:], thrift.STRUCT, 0)
@@ -7539,7 +7539,7 @@ func (p *ZkServer_OperationConStartGetBrokerResult) fastWriteField0(buf []byte, 
 	return offset
 }
 
-func (p *ZkServer_OperationConStartGetBrokerResult) field0Length() int {
+func (p *ZkServer_OperationsConStartGetBrokerResult) field0Length() int {
 	l := 0
 	if p.IsSetSuccess() {
 		l += thrift.Binary.FieldBeginLength()
@@ -7984,51 +7984,51 @@ func (p *Server_OperationsPrepareAcceptResult) GetResult() interface{} {
 	return p.Success
 }
 
-func (p *ZkServer_OperationCreateTopicArgs) GetFirstArgument() interface{} {
+func (p *ZkServer_OperationsCreateTopicArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-func (p *ZkServer_OperationCreateTopicResult) GetResult() interface{} {
+func (p *ZkServer_OperationsCreateTopicResult) GetResult() interface{} {
 	return p.Success
 }
 
-func (p *ZkServer_OperationCreatePartArgs) GetFirstArgument() interface{} {
+func (p *ZkServer_OperationsCreatePartArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-func (p *ZkServer_OperationCreatePartResult) GetResult() interface{} {
+func (p *ZkServer_OperationsCreatePartResult) GetResult() interface{} {
 	return p.Success
 }
 
-func (p *ZkServer_OperationProGetBrokerArgs) GetFirstArgument() interface{} {
+func (p *ZkServer_OperationsProGetBrokerArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-func (p *ZkServer_OperationProGetBrokerResult) GetResult() interface{} {
+func (p *ZkServer_OperationsProGetBrokerResult) GetResult() interface{} {
 	return p.Success
 }
 
-func (p *ZkServer_OperationSetPartitionStateArgs) GetFirstArgument() interface{} {
+func (p *ZkServer_OperationsSetPartitionStateArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-func (p *ZkServer_OperationSetPartitionStateResult) GetResult() interface{} {
+func (p *ZkServer_OperationsSetPartitionStateResult) GetResult() interface{} {
 	return p.Success
 }
 
-func (p *ZkServer_OperationSubArgs) GetFirstArgument() interface{} {
+func (p *ZkServer_OperationsSubArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-func (p *ZkServer_OperationSubResult) GetResult() interface{} {
+func (p *ZkServer_OperationsSubResult) GetResult() interface{} {
 	return p.Success
 }
 
-func (p *ZkServer_OperationConStartGetBrokerArgs) GetFirstArgument() interface{} {
+func (p *ZkServer_OperationsConStartGetBrokerArgs) GetFirstArgument() interface{} {
 	return p.Req
 }
 
-func (p *ZkServer_OperationConStartGetBrokerResult) GetResult() interface{} {
+func (p *ZkServer_OperationsConStartGetBrokerResult) GetResult() interface{} {
 	return p.Success
 }
 

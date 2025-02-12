@@ -4,6 +4,7 @@ import (
 	"github.com/cloudwego/kitex/server"
 	"nrMQ/kitex_gen/api/server_operations"
 	"nrMQ/kitex_gen/api/zkserver_operation"
+	"nrMQ/kitex_gen/api/zkserver_operations"
 	"nrMQ/kitex_gen/raftoperations/raft_operations"
 	"nrMQ/zookeeper"
 	"sync"
@@ -73,7 +74,7 @@ type info struct {
 	HostPort     string
 
 	//update dup
-	zkclient   *zkserver_operation.Client
+	zkclient   *zkserver_operations.Client
 	BrokerName string
 }
 
@@ -85,7 +86,7 @@ func NewServer(zkinfo zookeeper.ZkInfo) *Server {
 }
 
 func (s *Server) Make(opt Options, opt_cli []server.Option) {
-	s.consu
+
 }
 
 // 准备接收信息

@@ -171,7 +171,7 @@ struct ConStartGetBrokResponse {
     3: binary parts
 }
 
-service ZkServer_Operation {
+service ZkServer_Operations {
     CreateTopicResponse CreateTopic(1: CreateTopicRequest req)
     CreatePartResponse CreatePart(1: CreatePartRequest req)
     ProGetBrokResponse ProGetBroker(1: ProGetBrokRequest req)
