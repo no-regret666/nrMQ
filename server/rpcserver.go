@@ -22,7 +22,7 @@ type RPCServer struct {
 	zkserver *ZKServer
 }
 
-func (s *RPCServer) Start(opts_cli, opts_raf, opts_zks []server.Option, opt Options) error {
+func (s *RPCServer) Start(opts_cli, opts_zks, opts_raf []server.Option, opt Options) error {
 	switch opt.Tag {
 	case BROKER:
 		s.server = NewServer(s.zkinfo)
@@ -58,9 +58,18 @@ func (s *RPCServer) Start(opts_cli, opts_raf, opts_zks []server.Option, opt Opti
 	return nil
 }
 
+func (s *RPCServer) ShutDown_server() {
+	if s.srv_bro != nil {
+		(*s.srv_bro).Stop()
+	}
+	if s.zkserver != nil {
+		(*s.srv_cli).Stop()
+	}
+}
+
+// producer---->broker server
 func (s *RPCServer) Push(ctx context.Context, req *api.PushRequest) (r *api.PushResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	ret, err := s.server.PushHandle
 }
 
 func (s *RPCServer) ConInfo(ctx context.Context, req *api.InfoRequest) (r *api.InfoResponse, err error) {

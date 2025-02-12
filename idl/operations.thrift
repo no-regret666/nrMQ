@@ -171,13 +171,26 @@ struct ConStartGetBrokResponse {
     3: binary parts
 }
 
+struct BroInfoRequest {
+    1: string broker_name
+    2: string broker_host_port
+}
+
+struct BroInfoResponse {
+    1: bool ret
+}
+
 service ZkServer_Operations {
+    //producer和consumer
     CreateTopicResponse CreateTopic(1: CreateTopicRequest req)
     CreatePartResponse CreatePart(1: CreatePartRequest req)
     ProGetBrokResponse ProGetBroker(1: ProGetBrokRequest req)
     SetPartitionStateResponse SetPartitionState(1: SetPartitionStateRequest req)
     SubResponse Sub(1: SubRequest req)
     ConStartGetBrokResponse ConStartGetBroker(1: ConStartGetBrokRequest req)
+
+    //broker
+    BroInfoResponse BroInfo(1: BroInfoRequest req) //broker发送info让zkserver连接broker
 }
 
 struct PubRequest {

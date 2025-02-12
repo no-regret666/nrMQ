@@ -1,11 +1,15 @@
 package server
 
 import (
+	"context"
+	"errors"
+	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/server"
+	"nrMQ/kitex_gen/api"
 	"nrMQ/kitex_gen/api/server_operations"
-	"nrMQ/kitex_gen/api/zkserver_operation"
 	"nrMQ/kitex_gen/api/zkserver_operations"
 	"nrMQ/kitex_gen/raftoperations/raft_operations"
+	"nrMQ/logger"
 	"nrMQ/zookeeper"
 	"sync"
 )
@@ -18,7 +22,7 @@ type Server struct {
 	Name     string
 	me       int
 	zk       *zookeeper.ZK
-	zkclient zkserver_operation.Client
+	zkclient zkserver_operations.Client
 	mu       sync.RWMutex
 
 	aplych    chan info
@@ -27,7 +31,7 @@ type Server struct {
 	brokers   map[string]*raft_operations.Client
 
 	//raft
-	prafts_rafts *parts_raft
+	pafts_rafts *parts_raft
 
 	//fetch
 	parts_fetch   map[string]string                    //topicName + partitionName to broker HostPort
@@ -86,6 +90,52 @@ func NewServer(zkinfo zookeeper.ZkInfo) *Server {
 }
 
 func (s *Server) Make(opt Options, opt_cli []server.Option) {
+	s.consumers = make(map[string]*Client)
+	s.topics = make(map[string]*Topic)
+	s.brokers = make(map[string]*raft_operations.Client)
+	s.parts_fetch = make(map[string]string)
+	s.brokers_fetch = make(map[string]*server_operations.Client)
+	s.aplych = make(chan info)
+
+	s.CheckList()
+	s.Name = opt.Name
+	s.me = opt.Me
+
+	//本地创建parts-raft，为raft同步做准备
+
+	//在zookeeper上创建一个永久节点，若存在则不需要创建
+	err := s.zk.RegisterNode(zookeeper.BrokerNode{
+		Name:         s.Name,
+		Me:           s.me,
+		BrokHostPort: opt.Broker_Host_Port,
+		RaftHostPort: opt.Raft_Host_Port,
+	})
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+
+	//创建临时节点，用于zkserver的watch
+	err = s.zk.CreateState(s.Name)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+
+	//连接zkServer，并将自己的info发送到zkServer
+	zkclient, err := zkserver_operations.NewClient(opt.Name, client.WithHostPorts(opt.ZKServer_Host_Port))
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+	s.zkclient = zkclient
+
+	resp, err := zkclient.BroInfo(context.Background(), &api.BroInfoRequest{
+		BrokerName:     opt.Name,
+		BrokerHostPort: opt.Broker_Host_Port,
+	})
+	if err != nil || !resp.Ret {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+
+	//开始获取管道中的内容，写入文件或更新leader
 
 }
 
@@ -94,4 +144,36 @@ func (s *Server) Make(opt Options, opt_cli []server.Option) {
 // 设置partition中的file和fd,start_index等信息
 func (s *Server) PrepareAcceptHandle(in info) (ret string, err error) {
 
+}
+
+// start到该partition中的raft集群中
+// 收到返回后判断该写入还是返回
+func (s *Server) PushHandle(in info) (ret string, err error) {
+	logger.DEBUG(logger.DLog, "get Message from producer\n")
+	s.mu.RLock()
+	topic, ok := s.topics[in.topic_name]
+	part_raft := s.pafts_rafts
+	s.mu.RUnlock()
+
+	if !ok {
+		ret = "this topic is not in this broker"
+		logger.DEBUG(logger.DError, "Topic %v,is not in this broker", in.topic_name)
+		return ret, errors.New(ret)
+	}
+
+	switch in.ack {
+	case -1: //raft同步，并写入
+		ret, err = part_raft.Append(in)
+	case 1: //leader写入，不等待同步
+		err = topic.AddMessage(in)
+	case 0: //直接返回
+		go topic.addMessage(in)
+	}
+
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return err.Error(), err
+	}
+
+	return ret, err
 }

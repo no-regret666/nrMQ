@@ -6,7 +6,7 @@ import (
 	"github.com/cloudwego/kitex/client"
 	"nrMQ/kitex_gen/api"
 	"nrMQ/kitex_gen/api/server_operations"
-	"nrMQ/kitex_gen/api/zkserver_operation"
+	"nrMQ/kitex_gen/api/zkserver_operations"
 	"sync"
 )
 
@@ -20,7 +20,7 @@ type Producer struct {
 	mu sync.RWMutex
 
 	Name            string //唯一标识
-	ZkBroker        zkserver_operation.Client
+	ZkBroker        zkserver_operations.Client
 	TopicPartitions map[string]server_operations.Client //map[topicname+partname]cli：缓存主题分区和broker关系
 	TopPartIndexs   map[string]int64
 }
@@ -33,7 +33,7 @@ func NewProducer(zkBroker string, name string) (*Producer, error) {
 		TopPartIndexs:   make(map[string]int64),
 	}
 	var err error
-	p.ZkBroker, err = zkserver_operation.NewClient(p.Name, client.WithHostPorts(zkBroker))
+	p.ZkBroker, err = zkserver_operations.NewClient(p.Name, client.WithHostPorts(zkBroker))
 
 	return &p, err
 }

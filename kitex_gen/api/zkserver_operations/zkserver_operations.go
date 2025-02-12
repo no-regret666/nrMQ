@@ -55,6 +55,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
+	"BroInfo": kitex.NewMethodInfo(
+		broInfoHandler,
+		newZkServer_OperationsBroInfoArgs,
+		newZkServer_OperationsBroInfoResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
 }
 
 var (
@@ -229,6 +236,24 @@ func newZkServer_OperationsConStartGetBrokerResult() interface{} {
 	return api.NewZkServer_OperationsConStartGetBrokerResult()
 }
 
+func broInfoHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.ZkServer_OperationsBroInfoArgs)
+	realResult := result.(*api.ZkServer_OperationsBroInfoResult)
+	success, err := handler.(api.ZkServer_Operations).BroInfo(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newZkServer_OperationsBroInfoArgs() interface{} {
+	return api.NewZkServer_OperationsBroInfoArgs()
+}
+
+func newZkServer_OperationsBroInfoResult() interface{} {
+	return api.NewZkServer_OperationsBroInfoResult()
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -294,6 +319,16 @@ func (p *kClient) ConStartGetBroker(ctx context.Context, req *api.ConStartGetBro
 	_args.Req = req
 	var _result api.ZkServer_OperationsConStartGetBrokerResult
 	if err = p.c.Call(ctx, "ConStartGetBroker", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) BroInfo(ctx context.Context, req *api.BroInfoRequest) (r *api.BroInfoResponse, err error) {
+	var _args api.ZkServer_OperationsBroInfoArgs
+	_args.Req = req
+	var _result api.ZkServer_OperationsBroInfoResult
+	if err = p.c.Call(ctx, "BroInfo", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
