@@ -143,3 +143,51 @@ func (z *ZKServer) CreatePart(info Info_in) Info_out {
 	err = z.CreateNowBlock(info)
 	return Info_out{Err: err}
 }
+
+// 设置Partition的接收信息方式
+// 若ack = -1,则为raft同步信息
+// 若ack = 1,则leader写入, fetch获取信息
+// 若ack = 0,则立即返回   , fetch获取信息
+func (z *ZKServer) SetPartitionState(info Info_in) Info_out {
+	var ret string
+	var data_brokers []byte
+	var Dups []zookeeper.DuplicateNode
+	node, err := z.zk.GetPartState(info.topic_name, info.part_name)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return Info_out{
+			Err: err,
+		}
+	}
+
+	if info.option != node.Option {
+		index, err := z.zk.GetPartBlockIndex(info.topic_name, info.part_name)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+			return Info_out{
+				Err: err,
+			}
+		}
+		z.zk.UpdatePartitionNode(zookeeper.PartitionNode{
+			TopicName: info.topic_name,
+			Name:      info.part_name,
+			Index:     index,
+			Option:    info.option,
+			PTPoffset: node.PTPoffset,
+			DupNum:    info.dupnum, //需要下面的程序确认，是否能分配一定数量的副本
+		})
+	}
+
+	logger.DEBUG(logger.DLog, "this partition(%v) status is %v\n", node.Name, node.Option)
+
+	if node.Option == -2 {
+		//未创建任何状态，即该partition未接收过任何信息
+
+		switch info.option {
+		case -1:
+			//负载均衡获得一定数量broker节点，并在这些broker上部署raft集群
+			//raft副本个数暂定默认3个
+
+		}
+	}
+}

@@ -165,7 +165,7 @@ func (s *Server) PushHandle(in info) (ret string, err error) {
 	case -1: //raft同步，并写入
 		ret, err = part_raft.Append(in)
 	case 1: //leader写入，不等待同步
-		err = topic.AddMessage(in)
+		err = topic.addMessage(in)
 	case 0: //直接返回
 		go topic.addMessage(in)
 	}

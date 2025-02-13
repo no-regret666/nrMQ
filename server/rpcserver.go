@@ -22,6 +22,13 @@ type RPCServer struct {
 	zkserver *ZKServer
 }
 
+func NewRPCServer(zkinfo zookeeper.ZkInfo) RPCServer {
+	logger.LOGinit()
+	return RPCServer{
+		zkinfo: zkinfo,
+	}
+}
+
 func (s *RPCServer) Start(opts_cli, opts_zks, opts_raf []server.Option, opt Options) error {
 	switch opt.Tag {
 	case BROKER:
@@ -69,7 +76,24 @@ func (s *RPCServer) ShutDown_server() {
 
 // producer---->broker server
 func (s *RPCServer) Push(ctx context.Context, req *api.PushRequest) (r *api.PushResponse, err error) {
-	ret, err := s.server.PushHandle
+	ret, err := s.server.PushHandle(info{
+		producer:   req.Producer,
+		topic_name: req.Topic,
+		part_name:  req.Key,
+		ack:        req.Ack,
+		cmdindex:   req.CmdIndex,
+		message:    req.Message,
+		size:       req.Size,
+	})
+
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+
+	return &api.PushResponse{
+		Ret: true,
+		Err: ret,
+	}, nil
 }
 
 func (s *RPCServer) ConInfo(ctx context.Context, req *api.InfoRequest) (r *api.InfoResponse, err error) {
@@ -87,41 +111,94 @@ func (s *RPCServer) Pull(ctx context.Context, req *api.PullRequest) (r *api.Pull
 	panic("implement me")
 }
 
+// producer--->zkserver
+// 先在zookeeper上创建一个Topic,当生产该信息时，或消费信息时再有zkserver发送信息到broker让broker创建
 func (s *RPCServer) CreateTopic(ctx context.Context, req *api.CreateTopicRequest) (r *api.CreateTopicResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	info := s.zkserver.CreateTopic(Info_in{
+		topic_name: req.TopicName,
+	})
+
+	if info.Err != nil {
+		return &api.CreateTopicResponse{
+			Ret: false,
+			Err: info.Err.Error(),
+		}, info.Err
+	}
+
+	return &api.CreateTopicResponse{
+		Ret: true,
+		Err: "ok",
+	}, nil
 }
 
+// producer--->zkserver
+// 先在zookeeper上创建一个Partition,当生产该信息时，或消费信息时再有zkserver发送信息到broker让broker创建
 func (s *RPCServer) CreatePart(ctx context.Context, req *api.CreatePartRequest) (r *api.CreatePartResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	info := s.zkserver.CreatePart(Info_in{
+		topic_name: req.TopicName,
+		part_name:  req.PartName,
+	})
+
+	if info.Err != nil {
+		return &api.CreatePartResponse{
+			Ret: false,
+			Err: info.Err.Error(),
+		}, info.Err
+	}
+
+	return &api.CreatePartResponse{
+		Ret: true,
+		Err: "ok",
+	}, nil
 }
 
+// producer获取该向哪个broker发送消息
 func (s *RPCServer) ProGetBroker(ctx context.Context, req *api.ProGetBrokRequest) (r *api.ProGetBrokResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	info := s.zkserver.ProGetBroker(Info_in{
+		topic_name: req.TopicName,
+		part_name:  req.PartName,
+	})
+
+	if info.Err != nil {
+		return &api.ProGetBrokResponse{
+			Ret: false,
+		}, info.Err
+	}
+
+	return &api.ProGetBrokResponse{
+		Ret:            true,
+		BrokerHostPort: info.bro_host_port,
+	}, nil
 }
 
 func (s *RPCServer) SetPartitionState(ctx context.Context, req *api.SetPartitionStateRequest) (r *api.SetPartitionStateResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	info := s.zkserver.SetPartitionState(Info_in{
+		topic_name: req.Topic,
+		part_name:  req.Partition,
+		option:     req.Option,
+		dupnum:     req.Dupnum,
+	})
+
+	if info.Err != nil {
+		return &api.SetPartitionStateResponse{
+			Ret: false,
+			Err: info.Err.Error(),
+		}, info.Err
+	}
+
+	return &api.SetPartitionStateResponse{
+		Ret: true,
+		Err: "ok",
+	}, nil
 }
 
 func (s *RPCServer) Sub(ctx context.Context, req *api.SubRequest) (r *api.SubResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+
 }
 
 func (s *RPCServer) ConStartGetBroker(ctx context.Context, req *api.ConStartGetBrokRequest) (r *api.ConStartGetBrokResponse, err error) {
 	//TODO implement me
 	panic("implement me")
-}
-
-func NewRPCServer(zkinfo zookeeper.ZkInfo) RPCServer {
-	logger.LOGinit()
-	return RPCServer{
-		zkinfo: zkinfo,
-	}
 }
 
 // zkserver---->broker server
