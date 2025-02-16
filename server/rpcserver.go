@@ -193,16 +193,80 @@ func (s *RPCServer) SetPartitionState(ctx context.Context, req *api.SetPartition
 }
 
 func (s *RPCServer) Sub(ctx context.Context, req *api.SubRequest) (r *api.SubResponse, err error) {
+	err = s.zkserver.SubHandle(Info_in{
+		cli_name:   req.Consumer,
+		topic_name: req.Topic,
+		part_name:  req.Key,
+		option:     req.Option,
+	})
 
+	if err == nil {
+		return &api.SubResponse{
+			Ret: true,
+		}, nil
+	}
+
+	return &api.SubResponse{Ret: false}, err
 }
 
 func (s *RPCServer) ConStartGetBroker(ctx context.Context, req *api.ConStartGetBrokRequest) (r *api.ConStartGetBrokResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	parts, size, err := s.zkserver.HandStartGetBroker(Info_in{
+		cli_name:   req.CliName,
+		topic_name: req.TopicName,
+		part_name:  req.PartName,
+		option:     req.Option,
+		index:      req.Index,
+	})
+	if err != nil {
+		return &api.ConStartGetBrokResponse{
+			Ret: false,
+		}, err
+	}
+
+	return &api.ConStartGetBrokResponse{
+		Ret:   true,
+		Size:  int64(size),
+		Parts: parts,
+	}, nil
 }
 
 // zkserver---->broker server
 // 通知broker准备接收生产者信息
 func (s *RPCServer) PrepareAccept(ctx context.Context, req *api.PrepareAcceptRequest) (r *api.PrepareAcceptResponse, err error) {
+	ret, err := s.server.PrepareAcceptHandle(info{
+		topic_name: req.TopicName,
+		part_name:  req.PartName,
+		file_name:  req.FileName,
+	})
+	if err != nil {
+		return &api.PrepareAcceptResponse{
+			Ret: false,
+			Err: ret,
+		}, err
+	}
 
+	return &api.PrepareAcceptResponse{
+		Ret: true,
+		Err: ret,
+	}, nil
+}
+
+func (s *RPCServer) CloseAccept(ctx context.Context, req *api.CloseAcceptRequest) (r *api.CloseAcceptResponse, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *RPCServer) PrepareState(ctx context.Context, req *api.PrepareStateRequest) (r *api.PrepareStateResponse, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *RPCServer) PrepareSend(ctx context.Context, req *api.PrepareSendRequest) (r *api.PrepareSendResponse, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *RPCServer) BroInfo(ctx context.Context, req *api.BroInfoRequest) (r *api.BroInfoResponse, err error) {
+	//TODO implement me
+	panic("implement me")
 }

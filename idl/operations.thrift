@@ -91,6 +91,45 @@ struct PrepareAcceptResponse {
     2: string err
 }
 
+struct CloseAcceptRequest {
+    1: string topic_name
+    2: string part_name
+    3: string oldfilename
+    4: string newfilename
+}
+
+struct CloseAcceptResponse {
+    1: bool ret
+    2: i64 startindex
+    3: i64 endindex
+}
+
+struct PrepareStateRequest {
+    1: string TopicName
+    2: string PartName
+    3: i8 State
+    4: binary Brokers
+}
+
+struct PrepareStateResponse {
+    1: bool Ret
+    2: string Err
+}
+
+struct PrepareSendRequest {
+    1: string consumer
+    2: string topic_name
+    3: string part_name
+    4: string file_name
+    5: i8 option
+    6: i64 offset
+}
+
+struct PrepareSendResponse {
+    1: bool ret
+    2: string err //若已经准备好"had_done"
+}
+
 service Server_Operations {
     //producer used
     PushResponse push(1: PushRequest req)
@@ -102,6 +141,9 @@ service Server_Operations {
 
     //zkserver used this rpc to request broker server
     PrepareAcceptResponse PrepareAccept(1: PrepareAcceptRequest req)
+    CloseAcceptResponse CloseAccept(1: CloseAcceptRequest req)
+    PrepareStateResponse PrepareState(1: PrepareStateRequest req)
+    PrepareSendResponse PrepareSend(1: PrepareSendRequest req)
 }
 
 struct CreateTopicRequest {

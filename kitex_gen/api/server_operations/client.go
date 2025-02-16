@@ -16,6 +16,9 @@ type Client interface {
 	StartToGet(ctx context.Context, req *api.InfoGetRequest, callOptions ...callopt.Option) (r *api.InfoGetResponse, err error)
 	Pull(ctx context.Context, req *api.PullRequest, callOptions ...callopt.Option) (r *api.PullResponse, err error)
 	PrepareAccept(ctx context.Context, req *api.PrepareAcceptRequest, callOptions ...callopt.Option) (r *api.PrepareAcceptResponse, err error)
+	CloseAccept(ctx context.Context, req *api.CloseAcceptRequest, callOptions ...callopt.Option) (r *api.CloseAcceptResponse, err error)
+	PrepareState(ctx context.Context, req *api.PrepareStateRequest, callOptions ...callopt.Option) (r *api.PrepareStateResponse, err error)
+	PrepareSend(ctx context.Context, req *api.PrepareSendRequest, callOptions ...callopt.Option) (r *api.PrepareSendResponse, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -70,4 +73,19 @@ func (p *kServer_OperationsClient) Pull(ctx context.Context, req *api.PullReques
 func (p *kServer_OperationsClient) PrepareAccept(ctx context.Context, req *api.PrepareAcceptRequest, callOptions ...callopt.Option) (r *api.PrepareAcceptResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.PrepareAccept(ctx, req)
+}
+
+func (p *kServer_OperationsClient) CloseAccept(ctx context.Context, req *api.CloseAcceptRequest, callOptions ...callopt.Option) (r *api.CloseAcceptResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.CloseAccept(ctx, req)
+}
+
+func (p *kServer_OperationsClient) PrepareState(ctx context.Context, req *api.PrepareStateRequest, callOptions ...callopt.Option) (r *api.PrepareStateResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.PrepareState(ctx, req)
+}
+
+func (p *kServer_OperationsClient) PrepareSend(ctx context.Context, req *api.PrepareSendRequest, callOptions ...callopt.Option) (r *api.PrepareSendResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.PrepareSend(ctx, req)
 }
