@@ -103,6 +103,25 @@ func NewPartition(broker_name, topic_name, part_name string) *Partition {
 	return part
 }
 
+func (p *Partition) StartGetMessage(file *File, fd *os.File, in info) string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	ret := ""
+	switch p.state {
+	case ALIVE:
+		ret = ErrHadStart
+	case CLOSE:
+		p.state = ALIVE
+		p.file = file
+		p.fd = fd
+		p.file_name = in.file_name
+		p.index = file.GetIndex(fd)
+		p.start_index = p.index
+		ret = "ok"
+	}
+	return ret
+}
+
 type SubScription struct {
 	rmu        sync.RWMutex
 	name       string

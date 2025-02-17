@@ -177,3 +177,7 @@ func (s *Server) PushHandle(in info) (ret string, err error) {
 
 	return ret, err
 }
+
+const (
+	ErrHadStart = "this partition had start"
+)

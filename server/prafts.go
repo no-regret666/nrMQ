@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/cloudwego/kitex/server"
+	"nrMQ/raft"
 	"sync"
 )
 
@@ -50,4 +51,16 @@ type parts_raft struct {
 	applyindexs map[string]int
 
 	Now_Num int
+}
+
+func NewParts_Raft() *parts_raft {
+	return &parts_raft{
+		mu: sync.RWMutex{},
+	}
+}
+
+func (p *parts_raft) Make(name string, opts []server.Option, appench chan info, me int) {
+	p.applyCh = appench
+	p.me = me
+
 }
