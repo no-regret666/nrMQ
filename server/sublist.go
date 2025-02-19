@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"nrMQ/logger"
 	"os"
 	"sync"
@@ -47,6 +48,55 @@ func NewTopic(broker_name, topic_name string) *Topic {
 	CreateList(str) //则存在，则不会创建
 
 	return topic
+}
+
+func (t *Topic) PrepareAcceptHandle(in info) (ret string, err error) {
+	t.mu.Lock()
+	partition, ok := t.Parts[in.part_name]
+	if !ok {
+		partition = NewPartition(t.Broker, t.Name, in.part_name)
+		t.Parts[in.part_name] = partition
+	}
+
+	//设置partition中的file和fd,start_index等信息
+	str, _ := os.Getwd()
+	str += "/" + t.Broker + "/" + in.topic_name + "/" + in.part_name + "/" + in.file_name
+	file, fd, Err, err := newFile(str)
+	if err != nil {
+		return Err, err
+	}
+	t.Files[str] = file
+	t.mu.Unlock()
+	ret = partition.StartGetMessage(file, fd, in)
+	if ret == OK {
+		logger.DEBUG(logger.DLog, "topic(%v)_partition(%v) Start success\n", in.topic_name, in.part_name)
+	} else {
+		logger.DEBUG(logger.DLog, "topic(%v)_partition(%v) had started\n", in.topic_name, in.part_name)
+	}
+	return ret, nil
+}
+
+func (t *Topic) CloseAcceptPart(in info) (start, end int64, ret string, err error) {
+	t.mu.Lock()
+	partition, ok := t.Parts[in.part_name]
+	t.mu.Unlock()
+	if !ok {
+		ret = "this partition is not in the broker"
+		logger.DEBUG(logger.DError, "this partition (%v) is not in this broker\n", in.part_name)
+		return 0, 0, ret, errors.New(ret)
+	}
+	start, end, ret, err = partition.CloseAcceptMessage(in)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	} else {
+		str, _ := os.Getwd()
+		str += "/" + t.Broker + "/" + in.topic_name + "/" + in.part_name + "/"
+		t.mu.Lock()
+		t.Files[str+in.new_name] = t.Files[str+in.file_name]
+		delete(t.Files, str+in.file_name)
+		t.mu.Unlock()
+	}
+	return start, end, ret, err
 }
 
 func (t *Topic) addMessage(in info) error {
@@ -103,6 +153,11 @@ func NewPartition(broker_name, topic_name, part_name string) *Partition {
 	return part
 }
 
+const (
+	ErrHadStart = "this partition had start"
+	OK          = "start partition successfully"
+)
+
 func (p *Partition) StartGetMessage(file *File, fd *os.File, in info) string {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -117,9 +172,35 @@ func (p *Partition) StartGetMessage(file *File, fd *os.File, in info) string {
 		p.file_name = in.file_name
 		p.index = file.GetIndex(fd)
 		p.start_index = p.index
-		ret = "ok"
+		ret = OK
 	}
 	return ret
+}
+
+func (p *Partition) CloseAcceptMessage(in info) (start, end int64, ret string, err error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.state == ALIVE {
+		str, _ := os.Getwd()
+		str += "/" + p.Broker + "/" + in.topic_name + "/" + in.part_name
+		err = p.file.Update(str, in.new_name) //修改本地文件名
+		p.file_name = in.new_name
+		p.state = DOWN
+		end = p.index
+		start = p.file.GetFirstIndex(p.fd)
+		p.fd.Close()
+	} else if p.state == DOWN {
+		ret = "this partition had close"
+		logger.DEBUG(logger.DLog, "%v\n", ret)
+		err = errors.New(ret)
+	}
+	return start, end, ret, err
+}
+
+func (p *Partition) GetFile() *File {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.file
 }
 
 type SubScription struct {

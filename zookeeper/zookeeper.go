@@ -54,7 +54,7 @@ type PartitionNode struct {
 	Index     int64  `json:"index"`
 	Option    int8   `json:"option"` //partition的状态
 	DupNum    int8   `json:"dupNum"`
-	PTPoffset int8   `json:"ptPoOffset"`
+	PTPoffset int64  `json:"PTPoffset"`
 }
 
 type SubscriptionNode struct {
@@ -259,6 +259,7 @@ func (z *ZK) CheckBroker(BrokerName string) bool {
 	return ok
 }
 
+// consumers 获取PTP的Brokers // (和PTP的offset)
 func (z *ZK) GetBrokers(topic string) ([]Part, error) {
 	path := z.TopicRoot + "/" + topic + "/" + "Partitions"
 	ok, _, err := z.conn.Exists(path)
@@ -267,11 +268,71 @@ func (z *ZK) GetBrokers(topic string) ([]Part, error) {
 		return nil, err
 	}
 
-	var parts []Part
+	var Parts []Part
 	partitions, _, _ := z.conn.Children(path)
 	for _, part := range partitions {
-
+		PNode, err := z.GetPartitionNode(path + "/" + part)
+		if err != nil {
+			logger.DEBUG(logger.DError, "get PartitionNode fail %v/%v", path, part)
+			return nil, err
+		}
+		PTP_index := PNode.PTPoffset
+		var max_dup DuplicateNode
+		max_dup.EndOffset = 0
+		blocks, _, _ := z.conn.Children(path + "/" + part)
+		for _, block := range blocks {
+			info, err := z.GetBlockNode(path + "/" + part + "/" + block)
+			if err != nil {
+				logger.DEBUG(logger.DError, "get block node fail %v/%v/%v\n", path, part, block)
+				continue
+			}
+			logger.DEBUG(logger.DLog, "the block is %v\n", info)
+			if info.StartOffset <= PTP_index && info.EndOffset >= PTP_index {
+				Duplicates, _, _ := z.conn.Children(path + "/" + part + "/" + info.Name)
+				for _, duplicate := range Duplicates {
+					duplicatenode, err := z.GetDuplicateNode(path + "/" + part + "/" + info.Name + "/" + duplicate)
+					if err != nil {
+						logger.DEBUG(logger.DError, "get dup node fail %v/%v/%v/%v\n", path, part, info.Name, duplicatenode)
+						continue
+					}
+					logger.DEBUG(logger.DLog, "the path of dup is %v node is %v", path+"/"+part+"/"+info.Name+"/"+duplicate, duplicatenode)
+					if max_dup.EndOffset == 0 || max_dup.EndOffset <= duplicatenode.EndOffset {
+						//保证broker在线
+						if z.CheckBroker(duplicatenode.BrokerName) {
+							max_dup = duplicatenode
+						} else {
+							logger.DEBUG(logger.DLog, "the broker %v is not online\n", duplicatenode.BrokerName)
+						}
+					}
+				}
+				logger.DEBUG(logger.DLog, "the max_dup is %v\n", max_dup)
+				var ret string
+				if max_dup.EndOffset != 0 {
+					ret = "ok"
+				} else {
+					ret = "the brokers not online"
+				}
+				//一个partition只取endoffset最大的broker，其他小的broker副本不全面
+				broker, err := z.GetBrokerNode(max_dup.BrokerName)
+				if err != nil {
+					logger.DEBUG(logger.DError, "get broker node fail %v\n", max_dup.BlockName)
+					continue
+				}
+				Parts = append(Parts, Part{
+					TopicName:     topic,
+					PartName:      part,
+					BrokerName:    broker.Name,
+					BrokHost_Port: broker.BrokHostPort,
+					RaftHost_Port: broker.RaftHostPort,
+					PTP_index:     PTP_index,
+					Filename:      info.FileName,
+					Err:           ret,
+				})
+				break
+			}
+		}
 	}
+	return Parts, nil
 }
 
 func (z *ZK) GetBroker(topic, part string, offset int64) (parts []Part, err error) {
@@ -282,6 +343,54 @@ func (z *ZK) GetBroker(topic, part string, offset int64) (parts []Part, err erro
 		return nil, err
 	}
 
+	var max_dup DuplicateNode
+	max_dup.EndOffset = 0
+	blocks, _, _ := z.conn.Children(part_path)
+	for _, block := range blocks {
+		info, err := z.GetBlockNode(part_path + "/" + block)
+		if err != nil {
+			logger.DEBUG(logger.DError, "get block node fail %v/%v\n", part_path, block)
+			continue
+		}
+
+		if info.StartOffset <= offset && info.EndOffset >= offset {
+			Duplicates, _, _ := z.conn.Children(part_path + "/" + block)
+			for _, duplicate := range Duplicates {
+				duplicatenode, err := z.GetDuplicateNode(part_path + "/" + block + "/" + duplicate)
+				if err != nil {
+					logger.DEBUG(logger.DError, "get dup node fail %v/%v/%v\n", part_path, block, duplicate)
+				}
+				if max_dup.EndOffset == 0 || max_dup.EndOffset <= duplicatenode.EndOffset {
+					//保证broker在线
+					if z.CheckBroker(duplicatenode.BrokerName) {
+						max_dup = duplicatenode
+					}
+				}
+			}
+			var ret string
+			if max_dup.EndOffset != 0 {
+				ret = "ok"
+			} else {
+				ret = "the brokers not online"
+			}
+			broker, err := z.GetBrokerNode(max_dup.BrokerName)
+			if err != nil {
+				logger.DEBUG(logger.DError, "get broker node fail %v\n", max_dup.BlockName)
+				continue
+			}
+			parts = append(parts, Part{
+				TopicName:     topic,
+				PartName:      part,
+				BrokerName:    broker.Name,
+				BrokHost_Port: broker.BrokHostPort,
+				RaftHost_Port: broker.RaftHostPort,
+				Filename:      info.FileName,
+				Err:           ret,
+			})
+			break
+		}
+	}
+	return parts, nil
 }
 
 type StartGetInfo struct {
