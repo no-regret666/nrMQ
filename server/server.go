@@ -177,3 +177,13 @@ func (s *Server) PushHandle(in info) (ret string, err error) {
 
 	return ret, err
 }
+
+// PullHandle
+// Pull message
+func (s *Server) PullHandle(in info) (MSGS, error) {
+	//若该请求属于PTP则读取index，获取上次的index，写入zookeeper中
+	logger.DEBUG(logger.DLog, "%v get pull request the in.op(%v) TOP_PTP_PULL(%v)\n", s.Name, in.option, TOPIC_NIL_PTP_PULL)
+	if in.option == TOPIC_NIL_PTP_PULL {
+
+	}
+}

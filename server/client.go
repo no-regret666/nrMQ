@@ -31,3 +31,10 @@ func NewClient(ipport string, con client_operations.Client) *Client {
 	}
 	return client
 }
+
+type MSGS struct {
+	start_index int64
+	end_index   int64
+	size        int8
+	array       []byte //由[]Message转byte
+}

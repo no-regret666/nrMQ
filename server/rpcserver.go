@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/cloudwego/kitex/server"
+	"io"
 	"nrMQ/kitex_gen/api"
 	"nrMQ/kitex_gen/api/server_operations"
 	"nrMQ/kitex_gen/api/zkserver_operations"
@@ -96,19 +97,62 @@ func (s *RPCServer) Push(ctx context.Context, req *api.PushRequest) (r *api.Push
 	}, nil
 }
 
+// consumer---->broker server
+// 获取broker的ip和port
 func (s *RPCServer) ConInfo(ctx context.Context, req *api.InfoRequest) (r *api.InfoResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	err = s.server.InfoHandle(req.IpPort)
+	if err == nil {
+		return &api.InfoResponse{
+			Ret: true,
+		}, nil
+	}
+	return &api.InfoResponse{Ret: false}, err
 }
 
+// consumer---->broker server
 func (s *RPCServer) StartToGet(ctx context.Context, req *api.InfoGetRequest) (r *api.InfoGetResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	err = s.server.StartGet(info{
+		consumer:   req.CliName,
+		topic_name: req.TopicName,
+		part_name:  req.PartName,
+		offset:     req.Offset,
+	})
+
+	if err == nil {
+		return &api.InfoGetResponse{
+			Ret: true,
+		}, nil
+	}
+
+	return &api.InfoGetResponse{Ret: false}, err
 }
 
+// consumer---->broker server
 func (s *RPCServer) Pull(ctx context.Context, req *api.PullRequest) (r *api.PullResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	Err := "ok"
+	ret, err := s.server.PullHandle(info{
+		consumer:   req.Consumer,
+		topic_name: req.Topic,
+		part_name:  req.Key,
+		size:       req.Size,
+		offset:     req.Offset,
+		option:     req.Option,
+	})
+	if err != nil {
+		if err == io.EOF && ret.size == 0 {
+			Err = "file EOF"
+		} else {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+			return &api.PullResponse{
+				Ret: false,
+				Err: err.Error(),
+			}, err
+		}
+	}
+
+	return &api.PullResponse{
+		Msgs: ret.array,
+	}
 }
 
 // producer--->zkserver
@@ -251,9 +295,29 @@ func (s *RPCServer) PrepareAccept(ctx context.Context, req *api.PrepareAcceptReq
 	}, nil
 }
 
+// zkserver---->broker server
+// zkserver控制broker停止接收某个partition的信息
+// 并修改文件名，关闭partition的fd等(指NowBlock的接收信息)
+// 调用者需向zookeeper修改节点信息
 func (s *RPCServer) CloseAccept(ctx context.Context, req *api.CloseAcceptRequest) (r *api.CloseAcceptResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	start, end, ret, err := s.server.CloseAcceptHandle(info{
+		topic_name: req.TopicName,
+		part_name:  req.PartName,
+		file_name:  req.Oldfilename,
+		new_name:   req.Newfilename_,
+	})
+	if err != nil {
+		logger.DEBUG(logger.DError, "Err %v err(%v)\n", ret, err.Error())
+		return &api.CloseAcceptResponse{
+			Ret: false,
+		}, err
+	}
+
+	return &api.CloseAcceptResponse{
+		Ret:        true,
+		Startindex: start,
+		Endindex:   end,
+	}, nil
 }
 
 func (s *RPCServer) PrepareState(ctx context.Context, req *api.PrepareStateRequest) (r *api.PrepareStateResponse, err error) {
@@ -261,12 +325,41 @@ func (s *RPCServer) PrepareState(ctx context.Context, req *api.PrepareStateReque
 	panic("implement me")
 }
 
+// zkserver---->broker server
+// 通知broker准备向consumer发送信息
 func (s *RPCServer) PrepareSend(ctx context.Context, req *api.PrepareSendRequest) (r *api.PrepareSendResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	ret, err := s.server.PrepareSendHandle(info{
+		consumer:   req.Consumer,
+		topic_name: req.TopicName,
+		part_name:  req.PartName,
+		option:     req.Option,
+		file_name:  req.FileName,
+		offset:     req.Offset,
+	})
+	if err != nil {
+		return &api.PrepareSendResponse{
+			Ret: false,
+			Err: ret,
+		}, err
+	}
+
+	return &api.PrepareSendResponse{
+		Ret: true,
+		Err: ret,
+	}, nil
 }
 
+// broker---->zkserver
+// broker连接到zkserver后会立即发送info,让zkserver连接到broker
 func (s *RPCServer) BroInfo(ctx context.Context, req *api.BroInfoRequest) (r *api.BroInfoResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+	err = s.zkserver.HandleBroInfo(req.BrokerName, req.BrokerHostPort)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return &api.BroInfoResponse{
+			Ret: false,
+		}, err
+	}
+	return &api.BroInfoResponse{
+		Ret: true,
+	}, nil
 }
