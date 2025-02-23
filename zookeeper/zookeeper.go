@@ -2,10 +2,20 @@ package zookeeper
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/go-zookeeper/zk"
 	"nrMQ/logger"
 	"reflect"
 	"time"
+)
+
+var (
+	BNodePath  = "%v/%v"                     // BrokerRoot/BrokerName
+	TNodePath  = "%v/%v"                     // TopicRoot/TopicName
+	PNodePath  = "%v/%v/partitions/%v"       // TNodePath/partitions/PartitionName
+	SNodePath  = "%v/%v/subscriptions/%v"    // TNodePath/subscriptions/SubscriptionName
+	BLNodePath = "%v/%v/partitions/%v/%v"    // PNodePath/BlockName
+	DNodePath  = "%v/%v/partitions/%v/%v/%v" // PNodePath/BlockName/DuplicateName
 )
 
 type ZK struct {
@@ -104,27 +114,27 @@ func (z *ZK) RegisterNode(znode interface{}) (err error) {
 	switch i.Name() {
 	case "BrokerNode":
 		bnode = znode.(BrokerNode) //断言
-		path += z.BrokerRoot + "/" + bnode.Name
+		path = fmt.Sprintf(BNodePath, z.BrokerRoot, bnode.Name)
 		data, err = json.Marshal(bnode)
 	case "TopicNode":
 		tnode = znode.(TopicNode)
-		path += z.TopicRoot + "/" + tnode.Name
+		path = fmt.Sprintf(TNodePath, z.TopicRoot, tnode.Name)
 		data, err = json.Marshal(tnode)
 	case "PartitionNode":
 		pnode = znode.(PartitionNode)
-		path += z.TopicRoot + "/" + pnode.TopicName + "/partitions/" + pnode.Name
+		path = fmt.Sprintf(PNodePath, z.TopicRoot, pnode.TopicName, pnode.Name)
 		data, err = json.Marshal(pnode)
 	case "SubscriptionNode":
 		snode = znode.(SubscriptionNode)
-		path += z.TopicRoot + "/" + snode.TopicName + "/subscriptions/" + snode.Name
+		path = fmt.Sprintf(SNodePath, z.BrokerRoot, snode.TopicName, snode.Name)
 		data, err = json.Marshal(snode)
 	case "BlockNode":
 		blnode = znode.(BlockNode)
-		path += z.TopicRoot + "/" + blnode.TopicName + "/Partitions/" + blnode.PartitionName + "/" + blnode.Name
+		path = fmt.Sprintf(BLNodePath, z.BrokerRoot, blnode.TopicName, blnode.PartitionName, blnode.Name)
 		data, err = json.Marshal(blnode)
 	case "DuplicateNode":
 		dnode = znode.(DuplicateNode)
-		path += z.TopicRoot + "/" + dnode.TopicName + "/Partitions/" + dnode.PartitionName + "/" + dnode.BlockName + "/" + dnode.BrokerName
+		path = fmt.Sprintf(DNodePath, z.BrokerRoot, dnode.TopicName, dnode.PartitionName, dnode.BlockName, dnode.BrokerName)
 		data, err = json.Marshal(dnode)
 	}
 	if err != nil {
@@ -139,7 +149,7 @@ func (z *ZK) RegisterNode(znode interface{}) (err error) {
 	} else {
 		_, err = z.conn.Create(path, data, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
-			logger.DEBUG(logger.DError, "the node %v create fail%v\n", path, err.Error())
+			logger.DEBUG(logger.DError, "the node %v create fail %v\n", path, err.Error())
 			return err
 		}
 	}

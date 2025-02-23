@@ -1,7 +1,10 @@
 package server
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"nrMQ/kitex_gen/api"
 	"nrMQ/logger"
 	"os"
 	"sync"
@@ -201,6 +204,65 @@ func (p *Partition) GetFile() *File {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.file
+}
+
+func (p *Partition) AddMessage(in info) (ret string, err error) {
+	p.mu.Lock()
+	if p.state == DOWN {
+		ret := "this partition had close"
+		logger.DEBUG(logger.DLog, "%v\n", ret)
+		return ret, errors.New(ret)
+	}
+	p.index++
+	msg := Message{
+		Index:      p.index,
+		Size:       in.size,
+		Topic_name: in.topic_name,
+		Part_name:  in.part_name,
+		Msg:        in.message,
+	}
+	logger.DEBUG(logger.DLog, "part_name(%v) add message %v index is %v size is %v\n", p.key, msg, p.index, p.index-p.start_index)
+
+	p.queue = append(p.queue, msg) //加入队列
+
+	//达到一定大小后写入磁盘
+	if p.index-p.start_index >= VIRTUAL_10 {
+		var msg []Message
+		for i := 0; i < VIRTUAL_10; i++ {
+			msg = append(msg, p.queue[i])
+		}
+
+		node := Key{
+			Start_index: p.start_index,
+			End_index:   p.start_index + VIRTUAL_10 - 1,
+		}
+
+		data_msg, err := json.Marshal(node)
+		if err != nil {
+			logger.DEBUG(logger.DLog, "%v turn json fail\n", msg)
+		}
+		node.Size = int64(len(data_msg))
+
+		logger.DEBUG(logger.DLog, "need write msgs size is (%v)", node.Size)
+		if !p.file.WriteFile(p.fd, node, data_msg) {
+			logger.DEBUG(logger.DError, "write to %v fail\n", p.file_name)
+		} else {
+			logger.DEBUG(logger.DLog, "%d write to %v success msgs %v\n", in.me, p.file_name, msg)
+		}
+		p.start_index += VIRTUAL_10 + 1
+		p.queue = p.queue[VIRTUAL_10:]
+	}
+
+	p.mu.Unlock()
+	(*in.zkclient).UpdateDup(context.Background(), &api.UpdateDupRequest{
+		Topic:      in.topic_name,
+		Part:       in.part_name,
+		BrokerName: in.BrokerName,
+		BlockName:  GetBlockName(in.file_name),
+		EndIndex:   p.index,
+	})
+
+	return ret, err
 }
 
 type SubScription struct {

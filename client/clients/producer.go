@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-type ProducerRecord struct {
+type Message struct {
 	Topic     string //主题
 	Partition string //分区
 	Msg       []byte //信息
@@ -74,7 +74,7 @@ func (p *Producer) SetPartitionState(topicName, partName string, option, dupnum 
 	return nil
 }
 
-func (p *Producer) Push(msg ProducerRecord, ack int) error {
+func (p *Producer) Push(msg Message, ack int) error {
 	str := msg.Topic + msg.Partition
 	var ok2 bool
 	var index int64

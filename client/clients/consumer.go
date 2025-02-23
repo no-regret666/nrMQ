@@ -11,7 +11,7 @@ import (
 	"nrMQ/kitex_gen/api"
 	ser "nrMQ/kitex_gen/api/client_operations"
 	"nrMQ/kitex_gen/api/server_operations"
-	"nrMQ/kitex_gen/api/zkserver_operation"
+	"nrMQ/kitex_gen/api/zkserver_operations"
 	"nrMQ/logger"
 	"sync"
 )
@@ -23,7 +23,7 @@ type Consumer struct {
 
 	srv      server.Server
 	port     string
-	zkBroker zkserver_operation.Client
+	zkBroker zkserver_operations.Client
 	Brokers  map[string]*server_operations.Client //broker_name--client
 }
 
@@ -37,7 +37,7 @@ func NewConsumer(zkBroker string, name string, port string) (*Consumer, error) {
 	}
 	var err error
 	fmt.Println("the zkBroker address is ", zkBroker, "the port is ", port)
-	c.zkBroker, err = zkserver_operation.NewClient(c.Name, client.WithHostPorts(zkBroker))
+	c.zkBroker, err = zkserver_operations.NewClient(c.Name, client.WithHostPorts(zkBroker))
 
 	return &c, err
 }

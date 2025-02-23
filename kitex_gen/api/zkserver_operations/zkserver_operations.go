@@ -62,6 +62,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
+	"UpdateDup": kitex.NewMethodInfo(
+		updateDupHandler,
+		newZkServer_OperationsUpdateDupArgs,
+		newZkServer_OperationsUpdateDupResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
 }
 
 var (
@@ -254,6 +261,24 @@ func newZkServer_OperationsBroInfoResult() interface{} {
 	return api.NewZkServer_OperationsBroInfoResult()
 }
 
+func updateDupHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.ZkServer_OperationsUpdateDupArgs)
+	realResult := result.(*api.ZkServer_OperationsUpdateDupResult)
+	success, err := handler.(api.ZkServer_Operations).UpdateDup(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newZkServer_OperationsUpdateDupArgs() interface{} {
+	return api.NewZkServer_OperationsUpdateDupArgs()
+}
+
+func newZkServer_OperationsUpdateDupResult() interface{} {
+	return api.NewZkServer_OperationsUpdateDupResult()
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -329,6 +354,16 @@ func (p *kClient) BroInfo(ctx context.Context, req *api.BroInfoRequest) (r *api.
 	_args.Req = req
 	var _result api.ZkServer_OperationsBroInfoResult
 	if err = p.c.Call(ctx, "BroInfo", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) UpdateDup(ctx context.Context, req *api.UpdateDupRequest) (r *api.UpdateDupResponse, err error) {
+	var _args api.ZkServer_OperationsUpdateDupArgs
+	_args.Req = req
+	var _result api.ZkServer_OperationsUpdateDupResult
+	if err = p.c.Call(ctx, "UpdateDup", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

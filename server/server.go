@@ -46,7 +46,7 @@ type Key struct {
 
 type Message struct {
 	Index      int64  `json:"index"`
-	Size       int64  `json:"size"`
+	Size       int8   `json:"size"`
 	Topic_name string `json:"topic_name"`
 	Part_name  string `json:"part_name"`
 	Msg        []byte `json:"msg"`

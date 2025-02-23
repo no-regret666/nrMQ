@@ -222,6 +222,19 @@ struct BroInfoResponse {
     1: bool ret
 }
 
+struct UpdateDupRequest {
+    1: string topic
+    2: string part
+    3: string BrokerName
+    4: string BlockName
+    5: i64 EndIndex
+    6: bool leader
+}
+
+struct UpdateDupResponse {
+    1: bool ret
+}
+
 service ZkServer_Operations {
     //producer和consumer
     CreateTopicResponse CreateTopic(1: CreateTopicRequest req)
@@ -233,6 +246,8 @@ service ZkServer_Operations {
 
     //broker
     BroInfoResponse BroInfo(1: BroInfoRequest req) //broker发送info让zkserver连接broker
+    //broker更新topic-partition的offset
+    UpdateDupResponse UpdateDup(1: UpdateDupRequest req)
 }
 
 struct PubRequest {

@@ -4,6 +4,7 @@ import (
 	Ser "github.com/cloudwego/kitex/server"
 	"net"
 	"nrMQ/zookeeper"
+	"os"
 )
 
 type PartKey struct {
@@ -76,4 +77,18 @@ func NewBrokerAndStart(zkinfo zookeeper.ZkInfo, opt Options) *RPCServer {
 	go func() {
 
 	}()
+}
+
+func CheckFileOrList(path string) (ret bool) {
+	_, err := os.Stat(path)
+	if err != nil {
+		return os.IsExist(err)
+	}
+	return true
+}
+
+func CreateFile(path string) (file *os.File, err error) {
+	file, err = os.Create(path)
+
+	return file, err
 }
