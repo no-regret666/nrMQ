@@ -34,13 +34,6 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
-	"SetPartitionState": kitex.NewMethodInfo(
-		setPartitionStateHandler,
-		newZkServer_OperationsSetPartitionStateArgs,
-		newZkServer_OperationsSetPartitionStateResult,
-		false,
-		kitex.WithStreamingMode(kitex.StreamingNone),
-	),
 	"Sub": kitex.NewMethodInfo(
 		subHandler,
 		newZkServer_OperationsSubArgs,
@@ -189,24 +182,6 @@ func newZkServer_OperationsProGetBrokerResult() interface{} {
 	return api.NewZkServer_OperationsProGetBrokerResult()
 }
 
-func setPartitionStateHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	realArg := arg.(*api.ZkServer_OperationsSetPartitionStateArgs)
-	realResult := result.(*api.ZkServer_OperationsSetPartitionStateResult)
-	success, err := handler.(api.ZkServer_Operations).SetPartitionState(ctx, realArg.Req)
-	if err != nil {
-		return err
-	}
-	realResult.Success = success
-	return nil
-}
-func newZkServer_OperationsSetPartitionStateArgs() interface{} {
-	return api.NewZkServer_OperationsSetPartitionStateArgs()
-}
-
-func newZkServer_OperationsSetPartitionStateResult() interface{} {
-	return api.NewZkServer_OperationsSetPartitionStateResult()
-}
-
 func subHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	realArg := arg.(*api.ZkServer_OperationsSubArgs)
 	realResult := result.(*api.ZkServer_OperationsSubResult)
@@ -314,16 +289,6 @@ func (p *kClient) ProGetBroker(ctx context.Context, req *api.ProGetBrokRequest) 
 	_args.Req = req
 	var _result api.ZkServer_OperationsProGetBrokerResult
 	if err = p.c.Call(ctx, "ProGetBroker", &_args, &_result); err != nil {
-		return
-	}
-	return _result.GetSuccess(), nil
-}
-
-func (p *kClient) SetPartitionState(ctx context.Context, req *api.SetPartitionStateRequest) (r *api.SetPartitionStateResponse, err error) {
-	var _args api.ZkServer_OperationsSetPartitionStateArgs
-	_args.Req = req
-	var _result api.ZkServer_OperationsSetPartitionStateResult
-	if err = p.c.Call(ctx, "SetPartitionState", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

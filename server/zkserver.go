@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/cloudwego/kitex/client"
 	"hash/crc32"
-	"nrMQ/client/clients"
 	"nrMQ/kitex_gen/api"
 	"nrMQ/kitex_gen/api/server_operations"
 	"nrMQ/logger"
@@ -20,7 +19,6 @@ type ZKServer struct {
 	mu              sync.RWMutex
 	zk              zookeeper.ZK
 	Name            string
-	Info_Brokers    map[string]zookeeper.BlockNode
 	Info_Topics     map[string]zookeeper.TopicNode
 	Info_Partitions map[string]zookeeper.PartitionNode
 
@@ -33,20 +31,20 @@ type ZKServer struct {
 }
 
 type Info_in struct {
-	cli_name   string
-	topic_name string
-	part_name  string
-	blockname  string
-	index      int64
-	option     int8
-	dupnum     int8
+	cliName   string
+	topicName string
+	partName  string
+	blockName string
+	index     int64
+	option    int8
+	dupNum    int8
 }
 
 type Info_out struct {
-	Err           error
-	broker_name   string
-	bro_host_port string
-	Ret           string
+	Err         error
+	brokerName  string
+	broHostPort string
+	Ret         string
 }
 
 func NewZKServer(zkinfo zookeeper.ZkInfo) *ZKServer {
@@ -58,33 +56,40 @@ func NewZKServer(zkinfo zookeeper.ZkInfo) *ZKServer {
 
 func (z *ZKServer) make(opt Options) {
 	z.Name = opt.Name
-	z.Info_Brokers = make(map[string]zookeeper.BlockNode)
 	z.Info_Topics = make(map[string]zookeeper.TopicNode)
 	z.Info_Partitions = make(map[string]zookeeper.PartitionNode)
 	z.Brokers = make(map[string]server_operations.Client)
 	z.PartToBro = make(map[string][]string)
 }
 
-func (z *ZKServer) HandleBroInfo(bro_name, bro_H_P string) error {
-	bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(bro_H_P))
-	if err != nil {
-		logger.DEBUG(logger.DError, "%v\n", err.Error())
-		return err
-	}
-	z.mu.Lock()
-	z.Brokers[bro_name] = bro_cli
-	z.mu.Unlock()
-
-	return nil
+func (z *ZKServer) CreateTopic(info Info_in) Info_out {
+	tnode := zookeeper.TopicNode{Name: info.topicName}
+	err := z.zk.RegisterNode(tnode)
+	return Info_out{Err: err}
 }
 
+func (z *ZKServer) CreatePart(info Info_in) Info_out {
+	pnode := zookeeper.PartitionNode{
+		Name:      info.partName,
+		TopicName: info.topicName,
+	}
+
+	err := z.zk.RegisterNode(pnode)
+	if err != nil {
+		return Info_out{Err: err}
+	}
+
+	return Info_out{Err: err}
+}
+
+// producer get broker
 func (z *ZKServer) ProGetBroker(info Info_in) Info_out {
 	//查询zookeeper,获得broker的host_port和name，若未连接则建立连接
-	broker, block, _, err := z.zk.GetPartNowBrokerNode(info.topic_name, info.part_name)
+	broker, block, err := z.zk.GetPartNowBrokerNode(info.topicName, info.partName)
 	if err != nil {
 		logger.DEBUG(logger.DError, "%v\n", err.Error())
 	}
-	PartitionNode, err := z.zk.GetPartState(info.topic_name, info.part_name)
+	PartitionNode, err := z.zk.GetPartState(info.topicName, info.partName)
 	if err != nil {
 		logger.DEBUG(logger.DError, "%v\n", err.Error())
 	}
@@ -153,146 +158,29 @@ func (z *ZKServer) ProGetBroker(info Info_in) Info_out {
 
 	//返回producer broker的host_port
 	return Info_out{
-		Err:           err,
-		broker_name:   broker.Name,
-		bro_host_port: broker.BrokHostPort,
-		Ret:           ret,
+		Err:         err,
+		brokerName:  broker.Name,
+		broHostPort: broker.BrokHostPort,
+		Ret:         ret,
 	}
 }
 
-func (z *ZKServer) CreateTopic(info Info_in) Info_out {
-	tnode := zookeeper.TopicNode{Name: info.topic_name}
-	err := z.zk.RegisterNode(tnode)
-	return Info_out{Err: err}
-}
-
-func (z *ZKServer) CreatePart(info Info_in) Info_out {
-	pnode := zookeeper.PartitionNode{
-		Name:      info.part_name,
-		Index:     int64(1),
-		TopicName: info.topic_name,
-		Option:    -2,
-		PTPoffset: int64(0),
-	}
-
-	err := z.zk.RegisterNode(pnode)
-	if err != nil {
-		return Info_out{Err: err}
-	}
-
-	err = z.CreateNowBlock(info)
-	return Info_out{Err: err}
-}
-
-// 设置Partition的接收信息方式
-// 若ack = -1,则为raft同步信息
-// 若ack = 1,则leader写入, fetch获取信息
-// 若ack = 0,则立即返回   , fetch获取信息
-func (z *ZKServer) SetPartitionState(info Info_in) Info_out {
-	var ret string
-	var data_brokers []byte
-	var Dups []zookeeper.DuplicateNode
-	node, err := z.zk.GetPartState(info.topic_name, info.part_name)
+func (z *ZKServer) HandleBroInfo(bro_name, bro_H_P string) error {
+	bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(bro_H_P))
 	if err != nil {
 		logger.DEBUG(logger.DError, "%v\n", err.Error())
-		return Info_out{
-			Err: err,
-		}
+		return err
 	}
+	z.mu.Lock()
+	z.Brokers[bro_name] = bro_cli
+	z.mu.Unlock()
 
-	if info.option != node.Option {
-		index, err := z.zk.GetPartBlockIndex(info.topic_name, info.part_name)
-		if err != nil {
-			logger.DEBUG(logger.DError, "%v\n", err.Error())
-			return Info_out{
-				Err: err,
-			}
-		}
-		z.zk.UpdatePartitionNode(zookeeper.PartitionNode{
-			TopicName: info.topic_name,
-			Name:      info.part_name,
-			Index:     index,
-			Option:    info.option,
-			PTPoffset: node.PTPoffset,
-			DupNum:    info.dupnum, //需要下面的程序确认，是否能分配一定数量的副本
-		})
-	}
-
-	logger.DEBUG(logger.DLog, "this partition(%v) status is %v\n", node.Name, node.Option)
-
-	if node.Option == -2 {
-		//未创建任何状态，即该partition未接收过任何信息
-
-		switch info.option {
-		case -1:
-			//负载均衡获得一定数量broker节点，并在这些broker上部署raft集群
-			//raft副本个数暂定默认3个
-
-		}
-	}
-}
-
-func (z *ZKServer) CreateNowBlock(info Info_in) error {
-	block_node := zookeeper.BlockNode{
-		Name:          "NowBlock",
-		FileName:      info.topic_name + info.part_name + "now.txt",
-		TopicName:     info.topic_name,
-		PartitionName: info.part_name,
-		StartOffset:   int64(0),
-	}
-	return z.zk.RegisterNode(block_node)
+	return nil
 }
 
 func (z *ZKServer) SubHandle(info Info_in) error {
 	//在zookeeper上创建sub节点，若节点已经存在，则加入group中
 	return nil
-}
-
-// consumer查询应该向哪些broker发送请求
-// zkserver让broker准备好topic/sub和config
-func (z *ZKServer) HandleStartGetBroker(info Info_in) (rets []byte, size int, err error) {
-	var Parts []zookeeper.Part
-
-	//检查该用户是否订阅了该topic/partition
-	z.zk.CheckSub(zookeeper.StartGetInfo{
-		CliName:       info.cli_name,
-		TopicName:     info.topic_name,
-		PartitionName: info.part_name,
-		Option:        info.option,
-	})
-
-	//获取该topic或partition的broker，并保证在线，若全部离线则Err
-	if info.option == TOPIC_NIL_PTP_PULL || info.option == TOPIC_NIL_PTP_PUSH {
-		Parts, err = z.zk.GetBrokers(info.topic_name)
-	} else if info.option == TOPIC_KEY_PSB_PULL || info.option == TOPIC_KEY_PSB_PUSH {
-		Parts, err = z.zk.GetBroker(info.topic_name, info.part_name, info.index)
-	}
-	if err != nil {
-		return nil, 0, err
-	}
-
-	logger.DEBUG(logger.DLog, "the brokers is %v\n", Parts)
-
-	//获取到该信息后将通知brokers，让他们检查是否有该Topic/Partition/Subscription/config等
-	//并开启Part发送协程，若协程在超时时间到后未收到管道的信息，则关闭该协程
-	partkeys := z.SendPreoare(Parts, info)
-
-	parts := clients.Parts{
-		PartKeys: partkeys,
-	}
-	data, err := json.Marshal(parts)
-
-	var nodes clients.Parts
-
-	json.Unmarshal(data, &nodes)
-
-	logger.DEBUG(logger.DLog, "the partkeys %v and nodes is %v\n", partkeys, nodes)
-
-	if err != nil {
-		logger.DEBUG(logger.DError, "turn partkeys to json fail %v", err.Error())
-	}
-
-	return data, size, nil
 }
 
 type ConsistentBro struct {

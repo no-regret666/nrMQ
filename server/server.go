@@ -53,19 +53,18 @@ type Message struct {
 }
 
 type info struct {
-	topic_name string
-	part_name  string
-	file_name  string
-	new_name   string
-	option     int8
-	offset     int64
-	size       int8
+	topicName string
+	partName  string
+	fileName  string
+	newName   string
+	option    int8
+	offset    int64
+	size      int8
 
 	ack int8
 
 	producer string
 	consumer string
-	cmdindex int64
 	message  []byte
 
 	//raft

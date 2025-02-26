@@ -5,11 +5,7 @@ struct PushRequest {
     2: string topic
     3: string key
     4: binary message
-    5: i64 StartIndex
-    6: i64 EndIndex
-    7: i8 Size
-    8: i8 Ack
-    9: i64 CmdIndex
+    5: i8 ack
 }
 
 struct PushResponse {
@@ -176,18 +172,6 @@ struct ProGetBrokResponse {
     3: string err
 }
 
-struct SetPartitionStateRequest {
-    1: string topic
-    2: string partition
-    3: i8 option
-    4: i8 dupnum
-}
-
-struct SetPartitionStateResponse {
-    1: bool ret
-    2: string err
-}
-
 struct SubRequest {
     1: string consumer
     2: string topic
@@ -236,11 +220,12 @@ struct UpdateDupResponse {
 }
 
 service ZkServer_Operations {
-    //producer和consumer
+    //produce
     CreateTopicResponse CreateTopic(1: CreateTopicRequest req)
     CreatePartResponse CreatePart(1: CreatePartRequest req)
     ProGetBrokResponse ProGetBroker(1: ProGetBrokRequest req)
-    SetPartitionStateResponse SetPartitionState(1: SetPartitionStateRequest req)
+
+    //consumer
     SubResponse Sub(1: SubRequest req)
     ConStartGetBrokResponse ConStartGetBroker(1: ConStartGetBrokRequest req)
 
