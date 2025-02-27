@@ -13,7 +13,7 @@ import (
 type Client interface {
 	CreateTopic(ctx context.Context, req *api.CreateTopicRequest, callOptions ...callopt.Option) (r *api.CreateTopicResponse, err error)
 	CreatePart(ctx context.Context, req *api.CreatePartRequest, callOptions ...callopt.Option) (r *api.CreatePartResponse, err error)
-	ProGetBroker(ctx context.Context, req *api.ProGetBrokRequest, callOptions ...callopt.Option) (r *api.ProGetBrokResponse, err error)
+	ProGetLeader(ctx context.Context, req *api.ProGetLeaderRequest, callOptions ...callopt.Option) (r *api.ProGetLeaderResponse, err error)
 	Sub(ctx context.Context, req *api.SubRequest, callOptions ...callopt.Option) (r *api.SubResponse, err error)
 	ConStartGetBroker(ctx context.Context, req *api.ConStartGetBrokRequest, callOptions ...callopt.Option) (r *api.ConStartGetBrokResponse, err error)
 	BroInfo(ctx context.Context, req *api.BroInfoRequest, callOptions ...callopt.Option) (r *api.BroInfoResponse, err error)
@@ -59,9 +59,9 @@ func (p *kZkServer_OperationsClient) CreatePart(ctx context.Context, req *api.Cr
 	return p.kClient.CreatePart(ctx, req)
 }
 
-func (p *kZkServer_OperationsClient) ProGetBroker(ctx context.Context, req *api.ProGetBrokRequest, callOptions ...callopt.Option) (r *api.ProGetBrokResponse, err error) {
+func (p *kZkServer_OperationsClient) ProGetLeader(ctx context.Context, req *api.ProGetLeaderRequest, callOptions ...callopt.Option) (r *api.ProGetLeaderResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
-	return p.kClient.ProGetBroker(ctx, req)
+	return p.kClient.ProGetLeader(ctx, req)
 }
 
 func (p *kZkServer_OperationsClient) Sub(ctx context.Context, req *api.SubRequest, callOptions ...callopt.Option) (r *api.SubResponse, err error) {

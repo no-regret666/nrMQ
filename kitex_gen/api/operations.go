@@ -6601,38 +6601,38 @@ func (p *CreatePartResponse) Field2DeepEqual(src string) bool {
 	return true
 }
 
-type ProGetBrokRequest struct {
+type ProGetLeaderRequest struct {
 	TopicName string `thrift:"topic_name,1" frugal:"1,default,string" json:"topic_name"`
 	PartName  string `thrift:"part_name,2" frugal:"2,default,string" json:"part_name"`
 }
 
-func NewProGetBrokRequest() *ProGetBrokRequest {
-	return &ProGetBrokRequest{}
+func NewProGetLeaderRequest() *ProGetLeaderRequest {
+	return &ProGetLeaderRequest{}
 }
 
-func (p *ProGetBrokRequest) InitDefault() {
+func (p *ProGetLeaderRequest) InitDefault() {
 }
 
-func (p *ProGetBrokRequest) GetTopicName() (v string) {
+func (p *ProGetLeaderRequest) GetTopicName() (v string) {
 	return p.TopicName
 }
 
-func (p *ProGetBrokRequest) GetPartName() (v string) {
+func (p *ProGetLeaderRequest) GetPartName() (v string) {
 	return p.PartName
 }
-func (p *ProGetBrokRequest) SetTopicName(val string) {
+func (p *ProGetLeaderRequest) SetTopicName(val string) {
 	p.TopicName = val
 }
-func (p *ProGetBrokRequest) SetPartName(val string) {
+func (p *ProGetLeaderRequest) SetPartName(val string) {
 	p.PartName = val
 }
 
-var fieldIDToName_ProGetBrokRequest = map[int16]string{
+var fieldIDToName_ProGetLeaderRequest = map[int16]string{
 	1: "topic_name",
 	2: "part_name",
 }
 
-func (p *ProGetBrokRequest) Read(iprot thrift.TProtocol) (err error) {
+func (p *ProGetLeaderRequest) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -6686,7 +6686,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ProGetBrokRequest[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ProGetLeaderRequest[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -6696,7 +6696,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *ProGetBrokRequest) ReadField1(iprot thrift.TProtocol) error {
+func (p *ProGetLeaderRequest) ReadField1(iprot thrift.TProtocol) error {
 
 	var _field string
 	if v, err := iprot.ReadString(); err != nil {
@@ -6707,7 +6707,7 @@ func (p *ProGetBrokRequest) ReadField1(iprot thrift.TProtocol) error {
 	p.TopicName = _field
 	return nil
 }
-func (p *ProGetBrokRequest) ReadField2(iprot thrift.TProtocol) error {
+func (p *ProGetLeaderRequest) ReadField2(iprot thrift.TProtocol) error {
 
 	var _field string
 	if v, err := iprot.ReadString(); err != nil {
@@ -6719,10 +6719,10 @@ func (p *ProGetBrokRequest) ReadField2(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *ProGetBrokRequest) Write(oprot thrift.TProtocol) (err error) {
+func (p *ProGetLeaderRequest) Write(oprot thrift.TProtocol) (err error) {
 
 	var fieldId int16
-	if err = oprot.WriteStructBegin("ProGetBrokRequest"); err != nil {
+	if err = oprot.WriteStructBegin("ProGetLeaderRequest"); err != nil {
 		goto WriteStructBeginError
 	}
 	if p != nil {
@@ -6752,7 +6752,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *ProGetBrokRequest) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *ProGetLeaderRequest) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("topic_name", thrift.STRING, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -6769,7 +6769,7 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *ProGetBrokRequest) writeField2(oprot thrift.TProtocol) (err error) {
+func (p *ProGetLeaderRequest) writeField2(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("part_name", thrift.STRING, 2); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -6786,15 +6786,15 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 2 end error: ", p), err)
 }
 
-func (p *ProGetBrokRequest) String() string {
+func (p *ProGetLeaderRequest) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("ProGetBrokRequest(%+v)", *p)
+	return fmt.Sprintf("ProGetLeaderRequest(%+v)", *p)
 
 }
 
-func (p *ProGetBrokRequest) DeepEqual(ano *ProGetBrokRequest) bool {
+func (p *ProGetLeaderRequest) DeepEqual(ano *ProGetLeaderRequest) bool {
 	if p == ano {
 		return true
 	} else if p == nil || ano == nil {
@@ -6809,14 +6809,14 @@ func (p *ProGetBrokRequest) DeepEqual(ano *ProGetBrokRequest) bool {
 	return true
 }
 
-func (p *ProGetBrokRequest) Field1DeepEqual(src string) bool {
+func (p *ProGetLeaderRequest) Field1DeepEqual(src string) bool {
 
 	if strings.Compare(p.TopicName, src) != 0 {
 		return false
 	}
 	return true
 }
-func (p *ProGetBrokRequest) Field2DeepEqual(src string) bool {
+func (p *ProGetLeaderRequest) Field2DeepEqual(src string) bool {
 
 	if strings.Compare(p.PartName, src) != 0 {
 		return false
@@ -6824,47 +6824,47 @@ func (p *ProGetBrokRequest) Field2DeepEqual(src string) bool {
 	return true
 }
 
-type ProGetBrokResponse struct {
+type ProGetLeaderResponse struct {
 	Ret            bool   `thrift:"ret,1" frugal:"1,default,bool" json:"ret"`
 	BrokerHostPort string `thrift:"broker_host_port,2" frugal:"2,default,string" json:"broker_host_port"`
 	Err            string `thrift:"err,3" frugal:"3,default,string" json:"err"`
 }
 
-func NewProGetBrokResponse() *ProGetBrokResponse {
-	return &ProGetBrokResponse{}
+func NewProGetLeaderResponse() *ProGetLeaderResponse {
+	return &ProGetLeaderResponse{}
 }
 
-func (p *ProGetBrokResponse) InitDefault() {
+func (p *ProGetLeaderResponse) InitDefault() {
 }
 
-func (p *ProGetBrokResponse) GetRet() (v bool) {
+func (p *ProGetLeaderResponse) GetRet() (v bool) {
 	return p.Ret
 }
 
-func (p *ProGetBrokResponse) GetBrokerHostPort() (v string) {
+func (p *ProGetLeaderResponse) GetBrokerHostPort() (v string) {
 	return p.BrokerHostPort
 }
 
-func (p *ProGetBrokResponse) GetErr() (v string) {
+func (p *ProGetLeaderResponse) GetErr() (v string) {
 	return p.Err
 }
-func (p *ProGetBrokResponse) SetRet(val bool) {
+func (p *ProGetLeaderResponse) SetRet(val bool) {
 	p.Ret = val
 }
-func (p *ProGetBrokResponse) SetBrokerHostPort(val string) {
+func (p *ProGetLeaderResponse) SetBrokerHostPort(val string) {
 	p.BrokerHostPort = val
 }
-func (p *ProGetBrokResponse) SetErr(val string) {
+func (p *ProGetLeaderResponse) SetErr(val string) {
 	p.Err = val
 }
 
-var fieldIDToName_ProGetBrokResponse = map[int16]string{
+var fieldIDToName_ProGetLeaderResponse = map[int16]string{
 	1: "ret",
 	2: "broker_host_port",
 	3: "err",
 }
 
-func (p *ProGetBrokResponse) Read(iprot thrift.TProtocol) (err error) {
+func (p *ProGetLeaderResponse) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -6926,7 +6926,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ProGetBrokResponse[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ProGetLeaderResponse[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -6936,7 +6936,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *ProGetBrokResponse) ReadField1(iprot thrift.TProtocol) error {
+func (p *ProGetLeaderResponse) ReadField1(iprot thrift.TProtocol) error {
 
 	var _field bool
 	if v, err := iprot.ReadBool(); err != nil {
@@ -6947,7 +6947,7 @@ func (p *ProGetBrokResponse) ReadField1(iprot thrift.TProtocol) error {
 	p.Ret = _field
 	return nil
 }
-func (p *ProGetBrokResponse) ReadField2(iprot thrift.TProtocol) error {
+func (p *ProGetLeaderResponse) ReadField2(iprot thrift.TProtocol) error {
 
 	var _field string
 	if v, err := iprot.ReadString(); err != nil {
@@ -6958,7 +6958,7 @@ func (p *ProGetBrokResponse) ReadField2(iprot thrift.TProtocol) error {
 	p.BrokerHostPort = _field
 	return nil
 }
-func (p *ProGetBrokResponse) ReadField3(iprot thrift.TProtocol) error {
+func (p *ProGetLeaderResponse) ReadField3(iprot thrift.TProtocol) error {
 
 	var _field string
 	if v, err := iprot.ReadString(); err != nil {
@@ -6970,10 +6970,10 @@ func (p *ProGetBrokResponse) ReadField3(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *ProGetBrokResponse) Write(oprot thrift.TProtocol) (err error) {
+func (p *ProGetLeaderResponse) Write(oprot thrift.TProtocol) (err error) {
 
 	var fieldId int16
-	if err = oprot.WriteStructBegin("ProGetBrokResponse"); err != nil {
+	if err = oprot.WriteStructBegin("ProGetLeaderResponse"); err != nil {
 		goto WriteStructBeginError
 	}
 	if p != nil {
@@ -7007,7 +7007,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *ProGetBrokResponse) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *ProGetLeaderResponse) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("ret", thrift.BOOL, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -7024,7 +7024,7 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *ProGetBrokResponse) writeField2(oprot thrift.TProtocol) (err error) {
+func (p *ProGetLeaderResponse) writeField2(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("broker_host_port", thrift.STRING, 2); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -7041,7 +7041,7 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 2 end error: ", p), err)
 }
 
-func (p *ProGetBrokResponse) writeField3(oprot thrift.TProtocol) (err error) {
+func (p *ProGetLeaderResponse) writeField3(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("err", thrift.STRING, 3); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -7058,15 +7058,15 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 3 end error: ", p), err)
 }
 
-func (p *ProGetBrokResponse) String() string {
+func (p *ProGetLeaderResponse) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("ProGetBrokResponse(%+v)", *p)
+	return fmt.Sprintf("ProGetLeaderResponse(%+v)", *p)
 
 }
 
-func (p *ProGetBrokResponse) DeepEqual(ano *ProGetBrokResponse) bool {
+func (p *ProGetLeaderResponse) DeepEqual(ano *ProGetLeaderResponse) bool {
 	if p == ano {
 		return true
 	} else if p == nil || ano == nil {
@@ -7084,21 +7084,21 @@ func (p *ProGetBrokResponse) DeepEqual(ano *ProGetBrokResponse) bool {
 	return true
 }
 
-func (p *ProGetBrokResponse) Field1DeepEqual(src bool) bool {
+func (p *ProGetLeaderResponse) Field1DeepEqual(src bool) bool {
 
 	if p.Ret != src {
 		return false
 	}
 	return true
 }
-func (p *ProGetBrokResponse) Field2DeepEqual(src string) bool {
+func (p *ProGetLeaderResponse) Field2DeepEqual(src string) bool {
 
 	if strings.Compare(p.BrokerHostPort, src) != 0 {
 		return false
 	}
 	return true
 }
-func (p *ProGetBrokResponse) Field3DeepEqual(src string) bool {
+func (p *ProGetLeaderResponse) Field3DeepEqual(src string) bool {
 
 	if strings.Compare(p.Err, src) != 0 {
 		return false
@@ -10218,7 +10218,7 @@ type ZkServer_Operations interface {
 
 	CreatePart(ctx context.Context, req *CreatePartRequest) (r *CreatePartResponse, err error)
 
-	ProGetBroker(ctx context.Context, req *ProGetBrokRequest) (r *ProGetBrokResponse, err error)
+	ProGetLeader(ctx context.Context, req *ProGetLeaderRequest) (r *ProGetLeaderResponse, err error)
 
 	Sub(ctx context.Context, req *SubRequest) (r *SubResponse, err error)
 
@@ -13655,38 +13655,38 @@ func (p *ZkServer_OperationsCreatePartResult) Field0DeepEqual(src *CreatePartRes
 	return true
 }
 
-type ZkServer_OperationsProGetBrokerArgs struct {
-	Req *ProGetBrokRequest `thrift:"req,1" frugal:"1,default,ProGetBrokRequest" json:"req"`
+type ZkServer_OperationsProGetLeaderArgs struct {
+	Req *ProGetLeaderRequest `thrift:"req,1" frugal:"1,default,ProGetLeaderRequest" json:"req"`
 }
 
-func NewZkServer_OperationsProGetBrokerArgs() *ZkServer_OperationsProGetBrokerArgs {
-	return &ZkServer_OperationsProGetBrokerArgs{}
+func NewZkServer_OperationsProGetLeaderArgs() *ZkServer_OperationsProGetLeaderArgs {
+	return &ZkServer_OperationsProGetLeaderArgs{}
 }
 
-func (p *ZkServer_OperationsProGetBrokerArgs) InitDefault() {
+func (p *ZkServer_OperationsProGetLeaderArgs) InitDefault() {
 }
 
-var ZkServer_OperationsProGetBrokerArgs_Req_DEFAULT *ProGetBrokRequest
+var ZkServer_OperationsProGetLeaderArgs_Req_DEFAULT *ProGetLeaderRequest
 
-func (p *ZkServer_OperationsProGetBrokerArgs) GetReq() (v *ProGetBrokRequest) {
+func (p *ZkServer_OperationsProGetLeaderArgs) GetReq() (v *ProGetLeaderRequest) {
 	if !p.IsSetReq() {
-		return ZkServer_OperationsProGetBrokerArgs_Req_DEFAULT
+		return ZkServer_OperationsProGetLeaderArgs_Req_DEFAULT
 	}
 	return p.Req
 }
-func (p *ZkServer_OperationsProGetBrokerArgs) SetReq(val *ProGetBrokRequest) {
+func (p *ZkServer_OperationsProGetLeaderArgs) SetReq(val *ProGetLeaderRequest) {
 	p.Req = val
 }
 
-var fieldIDToName_ZkServer_OperationsProGetBrokerArgs = map[int16]string{
+var fieldIDToName_ZkServer_OperationsProGetLeaderArgs = map[int16]string{
 	1: "req",
 }
 
-func (p *ZkServer_OperationsProGetBrokerArgs) IsSetReq() bool {
+func (p *ZkServer_OperationsProGetLeaderArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *ZkServer_OperationsProGetBrokerArgs) Read(iprot thrift.TProtocol) (err error) {
+func (p *ZkServer_OperationsProGetLeaderArgs) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -13732,7 +13732,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsProGetBrokerArgs[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsProGetLeaderArgs[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -13742,8 +13742,8 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *ZkServer_OperationsProGetBrokerArgs) ReadField1(iprot thrift.TProtocol) error {
-	_field := NewProGetBrokRequest()
+func (p *ZkServer_OperationsProGetLeaderArgs) ReadField1(iprot thrift.TProtocol) error {
+	_field := NewProGetLeaderRequest()
 	if err := _field.Read(iprot); err != nil {
 		return err
 	}
@@ -13751,10 +13751,10 @@ func (p *ZkServer_OperationsProGetBrokerArgs) ReadField1(iprot thrift.TProtocol)
 	return nil
 }
 
-func (p *ZkServer_OperationsProGetBrokerArgs) Write(oprot thrift.TProtocol) (err error) {
+func (p *ZkServer_OperationsProGetLeaderArgs) Write(oprot thrift.TProtocol) (err error) {
 
 	var fieldId int16
-	if err = oprot.WriteStructBegin("ProGetBroker_args"); err != nil {
+	if err = oprot.WriteStructBegin("ProGetLeader_args"); err != nil {
 		goto WriteStructBeginError
 	}
 	if p != nil {
@@ -13780,7 +13780,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *ZkServer_OperationsProGetBrokerArgs) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *ZkServer_OperationsProGetLeaderArgs) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -13797,15 +13797,15 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *ZkServer_OperationsProGetBrokerArgs) String() string {
+func (p *ZkServer_OperationsProGetLeaderArgs) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("ZkServer_OperationsProGetBrokerArgs(%+v)", *p)
+	return fmt.Sprintf("ZkServer_OperationsProGetLeaderArgs(%+v)", *p)
 
 }
 
-func (p *ZkServer_OperationsProGetBrokerArgs) DeepEqual(ano *ZkServer_OperationsProGetBrokerArgs) bool {
+func (p *ZkServer_OperationsProGetLeaderArgs) DeepEqual(ano *ZkServer_OperationsProGetLeaderArgs) bool {
 	if p == ano {
 		return true
 	} else if p == nil || ano == nil {
@@ -13817,7 +13817,7 @@ func (p *ZkServer_OperationsProGetBrokerArgs) DeepEqual(ano *ZkServer_Operations
 	return true
 }
 
-func (p *ZkServer_OperationsProGetBrokerArgs) Field1DeepEqual(src *ProGetBrokRequest) bool {
+func (p *ZkServer_OperationsProGetLeaderArgs) Field1DeepEqual(src *ProGetLeaderRequest) bool {
 
 	if !p.Req.DeepEqual(src) {
 		return false
@@ -13825,38 +13825,38 @@ func (p *ZkServer_OperationsProGetBrokerArgs) Field1DeepEqual(src *ProGetBrokReq
 	return true
 }
 
-type ZkServer_OperationsProGetBrokerResult struct {
-	Success *ProGetBrokResponse `thrift:"success,0,optional" frugal:"0,optional,ProGetBrokResponse" json:"success,omitempty"`
+type ZkServer_OperationsProGetLeaderResult struct {
+	Success *ProGetLeaderResponse `thrift:"success,0,optional" frugal:"0,optional,ProGetLeaderResponse" json:"success,omitempty"`
 }
 
-func NewZkServer_OperationsProGetBrokerResult() *ZkServer_OperationsProGetBrokerResult {
-	return &ZkServer_OperationsProGetBrokerResult{}
+func NewZkServer_OperationsProGetLeaderResult() *ZkServer_OperationsProGetLeaderResult {
+	return &ZkServer_OperationsProGetLeaderResult{}
 }
 
-func (p *ZkServer_OperationsProGetBrokerResult) InitDefault() {
+func (p *ZkServer_OperationsProGetLeaderResult) InitDefault() {
 }
 
-var ZkServer_OperationsProGetBrokerResult_Success_DEFAULT *ProGetBrokResponse
+var ZkServer_OperationsProGetLeaderResult_Success_DEFAULT *ProGetLeaderResponse
 
-func (p *ZkServer_OperationsProGetBrokerResult) GetSuccess() (v *ProGetBrokResponse) {
+func (p *ZkServer_OperationsProGetLeaderResult) GetSuccess() (v *ProGetLeaderResponse) {
 	if !p.IsSetSuccess() {
-		return ZkServer_OperationsProGetBrokerResult_Success_DEFAULT
+		return ZkServer_OperationsProGetLeaderResult_Success_DEFAULT
 	}
 	return p.Success
 }
-func (p *ZkServer_OperationsProGetBrokerResult) SetSuccess(x interface{}) {
-	p.Success = x.(*ProGetBrokResponse)
+func (p *ZkServer_OperationsProGetLeaderResult) SetSuccess(x interface{}) {
+	p.Success = x.(*ProGetLeaderResponse)
 }
 
-var fieldIDToName_ZkServer_OperationsProGetBrokerResult = map[int16]string{
+var fieldIDToName_ZkServer_OperationsProGetLeaderResult = map[int16]string{
 	0: "success",
 }
 
-func (p *ZkServer_OperationsProGetBrokerResult) IsSetSuccess() bool {
+func (p *ZkServer_OperationsProGetLeaderResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *ZkServer_OperationsProGetBrokerResult) Read(iprot thrift.TProtocol) (err error) {
+func (p *ZkServer_OperationsProGetLeaderResult) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -13902,7 +13902,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsProGetBrokerResult[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsProGetLeaderResult[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -13912,8 +13912,8 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *ZkServer_OperationsProGetBrokerResult) ReadField0(iprot thrift.TProtocol) error {
-	_field := NewProGetBrokResponse()
+func (p *ZkServer_OperationsProGetLeaderResult) ReadField0(iprot thrift.TProtocol) error {
+	_field := NewProGetLeaderResponse()
 	if err := _field.Read(iprot); err != nil {
 		return err
 	}
@@ -13921,10 +13921,10 @@ func (p *ZkServer_OperationsProGetBrokerResult) ReadField0(iprot thrift.TProtoco
 	return nil
 }
 
-func (p *ZkServer_OperationsProGetBrokerResult) Write(oprot thrift.TProtocol) (err error) {
+func (p *ZkServer_OperationsProGetLeaderResult) Write(oprot thrift.TProtocol) (err error) {
 
 	var fieldId int16
-	if err = oprot.WriteStructBegin("ProGetBroker_result"); err != nil {
+	if err = oprot.WriteStructBegin("ProGetLeader_result"); err != nil {
 		goto WriteStructBeginError
 	}
 	if p != nil {
@@ -13950,7 +13950,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *ZkServer_OperationsProGetBrokerResult) writeField0(oprot thrift.TProtocol) (err error) {
+func (p *ZkServer_OperationsProGetLeaderResult) writeField0(oprot thrift.TProtocol) (err error) {
 	if p.IsSetSuccess() {
 		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
 			goto WriteFieldBeginError
@@ -13969,15 +13969,15 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
 }
 
-func (p *ZkServer_OperationsProGetBrokerResult) String() string {
+func (p *ZkServer_OperationsProGetLeaderResult) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("ZkServer_OperationsProGetBrokerResult(%+v)", *p)
+	return fmt.Sprintf("ZkServer_OperationsProGetLeaderResult(%+v)", *p)
 
 }
 
-func (p *ZkServer_OperationsProGetBrokerResult) DeepEqual(ano *ZkServer_OperationsProGetBrokerResult) bool {
+func (p *ZkServer_OperationsProGetLeaderResult) DeepEqual(ano *ZkServer_OperationsProGetLeaderResult) bool {
 	if p == ano {
 		return true
 	} else if p == nil || ano == nil {
@@ -13989,7 +13989,7 @@ func (p *ZkServer_OperationsProGetBrokerResult) DeepEqual(ano *ZkServer_Operatio
 	return true
 }
 
-func (p *ZkServer_OperationsProGetBrokerResult) Field0DeepEqual(src *ProGetBrokResponse) bool {
+func (p *ZkServer_OperationsProGetLeaderResult) Field0DeepEqual(src *ProGetLeaderResponse) bool {
 
 	if !p.Success.DeepEqual(src) {
 		return false

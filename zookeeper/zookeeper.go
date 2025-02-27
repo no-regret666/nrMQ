@@ -10,11 +10,12 @@ import (
 )
 
 var (
-	BNodePath  = "%v/%v"                     // BrokerRoot/BrokerName
-	TNodePath  = "%v/%v/%v"                  // TopicRoot/TopicName
-	PNodePath  = "%v/%v/partitions/%v"       // TopicRoot/TopicName/partitions/PartName
-	BlNodePath = "%v/%v/partitions/%v/%v"    // PNodePath/BlockName
-	DNodePath  = "%v/%v/partitions/%v/%v/%v" // BlNodePath/DuplicateName
+	BNodePath = "%v/%v"                       // BrokerRoot/BrokerName
+	TNodePath = "%v/%v/%v"                    // TopicRoot/TopicName
+	PNodePath = "%v/%v/%v"                    // TopicRoot/TopicName/PartName
+	SNodePath = "%v/%v/%v/subscription/%v"    // PNodePath/SubscriptionName
+	LNodePath = "%v/%v/%v/leader"             // PNodePath/leader
+	SuberPath = "%v/%v/%v/subscription/%v/%v" // SNodePath/suberName
 )
 
 type ZK struct {
@@ -45,8 +46,8 @@ func NewZK(info ZkInfo) *ZK {
 }
 
 type BrokerNode struct {
-	Name string `json:"name"`
-	Host string `json:"host"`
+	Name         string `json:"name"`
+	BrokHostPort string `json:"host"`
 }
 
 type TopicNode struct {
@@ -59,12 +60,21 @@ type PartitionNode struct {
 	TopicName string `json:"topicName"`
 }
 
-type BlockNode struct {
-	Name          string `json:"name"` //part所在broker
-	TopicName     string `json:"topicName"`
-	PartitionName string `json:"partitionName"`
+type SubscriptionNode struct {
+	Name      string `json:"name"`
+	TopicName string `json:"topicName"`
+	PartName  string `json:"partName"`
+	Subtype   string `json:"subtype"`
+}
 
-	LeaderBroker string `json:"leaderBroker"`
+type LeaderNode struct {
+	LeaderBroker string `json:"leader_broker"`
+}
+
+type SuberNode struct {
+	name      string `json:"name"`
+	TopicName string `json:"topicName"`
+	PartName  string `json:"partName"`
 }
 
 type Map struct {
@@ -105,7 +115,7 @@ func (z *ZK) RegisterNode(znode interface{}) (err error) {
 }
 
 func (z *ZK) UpdatePartitionNode(pnode PartitionNode) error {
-	path := z.TopicRoot + "/" + pnode.TopicName + "/partitions/" + pnode.Name
+	path := fmt.Sprintf(PNodePath, z.TopicRoot, pnode.TopicName, pnode.Name)
 	ok, _, err := z.conn.Exists(path)
 	if !ok {
 		return err
@@ -125,7 +135,7 @@ func (z *ZK) UpdatePartitionNode(pnode PartitionNode) error {
 
 func (z *ZK) GetPartState(topic_name, part_name string) (PartitionNode, error) {
 	var node PartitionNode
-	path := z.TopicRoot + "/" + topic_name + "/Partitions/" + part_name
+	path := fmt.Sprintf(PNodePath, z.TopicRoot, topic_name, part_name)
 	ok, _, err := z.conn.Exists(path)
 	if !ok {
 		return node, err
@@ -208,38 +218,30 @@ func (z *ZK) GetPartitionNode(path string) (PartitionNode, error) {
 	return pnode, nil
 }
 
-func (z *ZK) GetBlockNode(path string) (BlockNode, error) {
-	var blnode BlockNode
+func (z *ZK) GetLeader(path string) (BrokerNode, error) {
+	var lnode LeaderNode
+	path += "/leader"
 	ok, _, err := z.conn.Exists(path)
 	if !ok {
-		return blnode, err
+		return BrokerNode{}, err
 	}
 	data, _, _ := z.conn.Get(path)
-	err = json.Unmarshal(data, &blnode)
-	return blnode, nil
-}
+	err = json.Unmarshal(data, &lnode)
+	BrokerName := lnode.LeaderBroker
 
-// 若leader不在线，则等待一秒继续请求
-func (z *ZK) GetPartNowBrokerNode(topicName, partName string) (BrokerNode, BlockNode, error) {
-	now_block_path := fmt.Sprintf(BlNodePath, z.TopicRoot, topicName, partName, "NowBlock")
+	// 若leader不在线，则等待一秒继续请求
 	for {
-		NowBlock, err := z.GetBlockNode(now_block_path)
+		Broker, err := z.GetBrokerNode(BrokerName)
 		if err != nil {
-			logger.DEBUG(logger.DError, "get block node failed,path %v err is %v\n", now_block_path, err.Error())
-			return BrokerNode{}, BlockNode{}, err
+			logger.DEBUG(logger.DError, "get broker node fail,path %v err is %v\n", path, err.Error())
+			return BrokerNode{}, err
 		}
-		Broker, err := z.GetBrokerNode(NowBlock.LeaderBroker)
-		if err != nil {
-			logger.DEBUG(logger.DError, "get broker node failed,name %v err is %v\n", NowBlock.LeaderBroker, err.Error())
-			return BrokerNode{}, BlockNode{}, err
-		}
-		logger.DEBUG(logger.DLog, "the leader broker is %v\n", NowBlock.LeaderBroker)
-		ret := z.CheckBroker(Broker.Name)
-
+		logger.DEBUG(logger.DLog, "the leader broker is %v \n", BrokerName)
+		ret := z.CheckBroker(BrokerName)
 		if ret {
-			return Broker, NowBlock, nil
+			return Broker, nil
 		} else {
-			logger.DEBUG(logger.DLog, "the broker %v is not online\n", NowBlock.LeaderBroker)
+			logger.DEBUG(logger.DLog, "the broker %v is not online\n", BrokerName)
 			time.Sleep(time.Second * 1)
 		}
 	}

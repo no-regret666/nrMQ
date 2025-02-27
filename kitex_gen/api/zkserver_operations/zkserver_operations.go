@@ -27,10 +27,10 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
-	"ProGetBroker": kitex.NewMethodInfo(
-		proGetBrokerHandler,
-		newZkServer_OperationsProGetBrokerArgs,
-		newZkServer_OperationsProGetBrokerResult,
+	"ProGetLeader": kitex.NewMethodInfo(
+		proGetLeaderHandler,
+		newZkServer_OperationsProGetLeaderArgs,
+		newZkServer_OperationsProGetLeaderResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
@@ -164,22 +164,22 @@ func newZkServer_OperationsCreatePartResult() interface{} {
 	return api.NewZkServer_OperationsCreatePartResult()
 }
 
-func proGetBrokerHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	realArg := arg.(*api.ZkServer_OperationsProGetBrokerArgs)
-	realResult := result.(*api.ZkServer_OperationsProGetBrokerResult)
-	success, err := handler.(api.ZkServer_Operations).ProGetBroker(ctx, realArg.Req)
+func proGetLeaderHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.ZkServer_OperationsProGetLeaderArgs)
+	realResult := result.(*api.ZkServer_OperationsProGetLeaderResult)
+	success, err := handler.(api.ZkServer_Operations).ProGetLeader(ctx, realArg.Req)
 	if err != nil {
 		return err
 	}
 	realResult.Success = success
 	return nil
 }
-func newZkServer_OperationsProGetBrokerArgs() interface{} {
-	return api.NewZkServer_OperationsProGetBrokerArgs()
+func newZkServer_OperationsProGetLeaderArgs() interface{} {
+	return api.NewZkServer_OperationsProGetLeaderArgs()
 }
 
-func newZkServer_OperationsProGetBrokerResult() interface{} {
-	return api.NewZkServer_OperationsProGetBrokerResult()
+func newZkServer_OperationsProGetLeaderResult() interface{} {
+	return api.NewZkServer_OperationsProGetLeaderResult()
 }
 
 func subHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
@@ -284,11 +284,11 @@ func (p *kClient) CreatePart(ctx context.Context, req *api.CreatePartRequest) (r
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) ProGetBroker(ctx context.Context, req *api.ProGetBrokRequest) (r *api.ProGetBrokResponse, err error) {
-	var _args api.ZkServer_OperationsProGetBrokerArgs
+func (p *kClient) ProGetLeader(ctx context.Context, req *api.ProGetLeaderRequest) (r *api.ProGetLeaderResponse, err error) {
+	var _args api.ZkServer_OperationsProGetLeaderArgs
 	_args.Req = req
-	var _result api.ZkServer_OperationsProGetBrokerResult
-	if err = p.c.Call(ctx, "ProGetBroker", &_args, &_result); err != nil {
+	var _result api.ZkServer_OperationsProGetLeaderResult
+	if err = p.c.Call(ctx, "ProGetLeader", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

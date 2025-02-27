@@ -117,21 +117,41 @@ func (s *RPCServer) CreatePart(ctx context.Context, req *api.CreatePartRequest) 
 }
 
 // producer---->zkserver 获取该向哪个broker发送消息
-func (s *RPCServer) ProGetBroker(ctx context.Context, req *api.ProGetBrokRequest) (r *api.ProGetBrokResponse, err error) {
-	info := s.zkserver.ProGetBroker(Info_in{
+func (s *RPCServer) ProGetLeader(ctx context.Context, req *api.ProGetLeaderRequest) (r *api.ProGetLeaderResponse, err error) {
+	info := s.zkserver.ProGetLeader(Info_in{
 		topicName: req.TopicName,
 		partName:  req.PartName,
 	})
 
 	if info.Err != nil {
-		return &api.ProGetBrokResponse{
+		return &api.ProGetLeaderResponse{
 			Ret: false,
 		}, info.Err
 	}
 
-	return &api.ProGetBrokResponse{
+	return &api.ProGetLeaderResponse{
 		Ret:            true,
 		BrokerHostPort: info.broHostPort,
+	}, nil
+}
+
+// zkserver---->broker server
+// 通知broker准备接收生产者信息
+func (s *RPCServer) PrepareAccept(ctx context.Context, req *api.PrepareAcceptRequest) (r *api.PrepareAcceptResponse, err error) {
+	ret, err := s.server.PrepareAcceptHandle(info{
+		topicName: req.TopicName,
+		partName:  req.PartName,
+	})
+	if err != nil {
+		return &api.PrepareAcceptResponse{
+			Ret: false,
+			Err: ret,
+		}, err
+	}
+
+	return &api.PrepareAcceptResponse{
+		Ret: true,
+		Err: ret,
 	}, nil
 }
 
@@ -248,27 +268,6 @@ func (s *RPCServer) ConStartGetBroker(ctx context.Context, req *api.ConStartGetB
 		Ret:   true,
 		Size:  int64(size),
 		Parts: parts,
-	}, nil
-}
-
-// zkserver---->broker server
-// 通知broker准备接收生产者信息
-func (s *RPCServer) PrepareAccept(ctx context.Context, req *api.PrepareAcceptRequest) (r *api.PrepareAcceptResponse, err error) {
-	ret, err := s.server.PrepareAcceptHandle(info{
-		topic_name: req.TopicName,
-		part_name:  req.PartName,
-		file_name:  req.FileName,
-	})
-	if err != nil {
-		return &api.PrepareAcceptResponse{
-			Ret: false,
-			Err: ret,
-		}, err
-	}
-
-	return &api.PrepareAcceptResponse{
-		Ret: true,
-		Err: ret,
 	}, nil
 }
 

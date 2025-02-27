@@ -55,15 +55,15 @@ func NewTopic(broker_name, topic_name string) *Topic {
 
 func (t *Topic) PrepareAcceptHandle(in info) (ret string, err error) {
 	t.mu.Lock()
-	partition, ok := t.Parts[in.part_name]
+	partition, ok := t.Parts[in.partName]
 	if !ok {
-		partition = NewPartition(t.Broker, t.Name, in.part_name)
-		t.Parts[in.part_name] = partition
+		partition = NewPartition(t.Broker, t.Name, in.partName)
+		t.Parts[in.partName] = partition
 	}
 
 	//设置partition中的file和fd,start_index等信息
 	str, _ := os.Getwd()
-	str += "/" + t.Broker + "/" + in.topic_name + "/" + in.part_name + "/" + in.file_name
+	str += "/" + t.Broker + "/" + in.topicName + "/" + in.partName + "/" + in.fileName
 	file, fd, Err, err := newFile(str)
 	if err != nil {
 		return Err, err
@@ -72,9 +72,9 @@ func (t *Topic) PrepareAcceptHandle(in info) (ret string, err error) {
 	t.mu.Unlock()
 	ret = partition.StartGetMessage(file, fd, in)
 	if ret == OK {
-		logger.DEBUG(logger.DLog, "topic(%v)_partition(%v) Start success\n", in.topic_name, in.part_name)
+		logger.DEBUG(logger.DLog, "topic(%v)_partition(%v) Start success\n", in.topicName, in.partName)
 	} else {
-		logger.DEBUG(logger.DLog, "topic(%v)_partition(%v) had started\n", in.topic_name, in.part_name)
+		logger.DEBUG(logger.DLog, "topic(%v)_partition(%v) had started\n", in.topicName, in.partName)
 	}
 	return ret, nil
 }

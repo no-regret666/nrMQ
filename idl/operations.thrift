@@ -161,12 +161,12 @@ struct CreatePartResponse {
     2: string err
 }
 
-struct ProGetBrokRequest {
+struct ProGetLeaderRequest {
     1: string topic_name
     2: string part_name
 }
 
-struct ProGetBrokResponse {
+struct ProGetLeaderResponse {
     1: bool ret
     2: string broker_host_port
     3: string err
@@ -223,7 +223,7 @@ service ZkServer_Operations {
     //produce
     CreateTopicResponse CreateTopic(1: CreateTopicRequest req)
     CreatePartResponse CreatePart(1: CreatePartRequest req)
-    ProGetBrokResponse ProGetBroker(1: ProGetBrokRequest req)
+    ProGetLeaderResponse ProGetLeader(1: ProGetLeaderRequest req)
 
     //consumer
     SubResponse Sub(1: SubRequest req)

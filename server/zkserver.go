@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/cloudwego/kitex/client"
 	"hash/crc32"
 	"nrMQ/kitex_gen/api"
@@ -83,86 +83,31 @@ func (z *ZKServer) CreatePart(info Info_in) Info_out {
 }
 
 // producer get broker
-func (z *ZKServer) ProGetBroker(info Info_in) Info_out {
-	//查询zookeeper,获得broker的host_port和name，若未连接则建立连接
-	broker, block, err := z.zk.GetPartNowBrokerNode(info.topicName, info.partName)
-	if err != nil {
-		logger.DEBUG(logger.DError, "%v\n", err.Error())
-	}
-	PartitionNode, err := z.zk.GetPartState(info.topicName, info.partName)
+func (z *ZKServer) ProGetLeader(info Info_in) Info_out {
+	//查询zookeeper,获得leaderBroker的host_port，若未连接则建立连接
+	path := fmt.Sprintf(zookeeper.LNodePath, z.zk.TopicRoot, info.topicName, info.partName)
+	leader, err := z.zk.GetLeader(path)
 	if err != nil {
 		logger.DEBUG(logger.DError, "%v\n", err.Error())
 	}
 
-	//检查该Partition的状态是否设定
-	//检查该Partition在Brokers上是否创建raft集群或fetch
-	Brokers := make(map[string]string)
-	var ret string
-	Dups := z.zk.GetDuplicateNodes(block.TopicName, block.PartitionName, block.Name)
-	for _, DupNode := range Dups {
-		BrokerNode, err := z.zk.GetBrokerNode(DupNode.BrokerName)
+	broker, ok := z.Brokers[leader.Name]
+	//未连接该broker
+	if !ok {
+		broker, err := server_operations.NewClient(z.Name, client.WithHostPorts(leader.BrokHostPort))
 		if err != nil {
 			logger.DEBUG(logger.DError, "%v\n", err.Error())
 		}
-		Brokers[DupNode.BrokerName] = BrokerNode.BrokHostPort
+		z.mu.Lock()
+		z.Brokers[leader.Name] = broker
+		z.mu.Unlock()
 	}
 
-	data, err := json.Marshal(Brokers)
-	if err != nil {
-		logger.DEBUG(logger.DError, "%v\n", err.Error())
-	}
-
-	for BrokerName, BrokerHostPort := range Brokers {
-		z.mu.RLock()
-		bro_cli, ok := z.Brokers[BrokerName]
-		z.mu.RUnlock()
-
-		//若未连接该broker
-		if !ok {
-			bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(BrokerHostPort))
-			if err != nil {
-				logger.DEBUG(logger.DError, "%v\n", err.Error())
-			}
-			z.mu.Lock()
-			z.Brokers[BrokerName] = bro_cli
-			z.mu.Unlock()
-		}
-
-		//通知broker检查topic/partition，并创建队列准备接收消息
-		resp, err := bro_cli.PrepareAccept(context.Background(), &api.PrepareAcceptRequest{
-			TopicName: block.TopicName,
-			PartName:  block.PartitionName,
-			FileName:  block.FileName,
-		})
-		if err != nil || !resp.Ret {
-			logger.DEBUG(logger.DError, err.Error()+resp.Err)
-		}
-
-		//检查该Partition的状态是否设定
-		//检查该Partition在Brokers上是否创建raft集群或fetch
-		//若该Partition没有设置状态则返回通知producer
-		if PartitionNode.Option == -2 { //未设置状态
-			ret = "Partition State is -2"
-		} else {
-			resp, err := bro_cli.PrepareState(context.Background(), &api.PrepareStateRequest{
-				TopicName: block.TopicName,
-				PartName:  block.PartitionName,
-				State:     PartitionNode.Option,
-				Brokers:   data,
-			})
-			if err != nil || !resp.Ret {
-				logger.DEBUG(logger.DError, "%v\n", err.Error())
-			}
-		}
-	}
-
-	//返回producer broker的host_port
-	return Info_out{
-		Err:         err,
-		brokerName:  broker.Name,
-		broHostPort: broker.BrokHostPort,
-		Ret:         ret,
-	}
+	// 通知broker检查topic/partition，并创建队列准备接收信息
+	resp, err := broker.PrepareAccept(context.Background(), &api.PrepareAcceptRequest{
+		TopicName: info.topicName,
+		PartName:  info.partName,
+	})
 }
 
 func (z *ZKServer) HandleBroInfo(bro_name, bro_H_P string) error {

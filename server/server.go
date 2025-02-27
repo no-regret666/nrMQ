@@ -142,7 +142,18 @@ func (s *Server) Make(opt Options, opt_cli []server.Option) {
 // 检查topic和partition是否存在，不存在则需要创建
 // 设置partition中的file和fd,start_index等信息
 func (s *Server) PrepareAcceptHandle(in info) (ret string, err error) {
+	//检查topic
+	s.mu.Lock()
+	topic, ok := s.topics[in.topicName]
+	if !ok {
+		topic = NewTopic(s.Name, in.topicName)
+		s.topics[in.topicName] = topic
+	}
 
+	s.mu.Unlock()
+
+	//检查partition
+	return topic.PrepareAcceptHandle(in)
 }
 
 // start到该partition中的raft集群中
