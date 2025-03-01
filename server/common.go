@@ -3,8 +3,10 @@ package server
 import (
 	Ser "github.com/cloudwego/kitex/server"
 	"net"
+	"nrMQ/logger"
 	"nrMQ/zookeeper"
 	"os"
+	"runtime"
 )
 
 type PartKey struct {
@@ -81,14 +83,23 @@ func NewBrokerAndStart(zkinfo zookeeper.ZkInfo, opt Options) *RPCServer {
 
 func CheckFileOrList(path string) (ret bool) {
 	_, err := os.Stat(path)
-	if err != nil {
-		return os.IsExist(err)
+	return !os.IsNotExist(err)
+}
+
+func CreateList(path string) error {
+	ret := CheckFileOrList(path)
+
+	if !ret {
+		err := os.Mkdir(path, 0775)
+		if err != nil {
+			_, file, line, _ := runtime.Caller(1)
+			logger.DEBUG(logger.DError, "%v:%v mkdir %v error %v\n", file, line, path, err.Error())
+		}
 	}
-	return true
+
+	return nil
 }
 
 func CreateFile(path string) (file *os.File, err error) {
-	file, err = os.Create(path)
-
-	return file, err
+	return os.Create(path)
 }

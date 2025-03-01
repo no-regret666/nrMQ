@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/cloudwego/kitex/client"
@@ -85,29 +86,57 @@ func (z *ZKServer) CreatePart(info Info_in) Info_out {
 // producer get broker
 func (z *ZKServer) ProGetLeader(info Info_in) Info_out {
 	//查询zookeeper,获得leaderBroker的host_port，若未连接则建立连接
-	path := fmt.Sprintf(zookeeper.LNodePath, z.zk.TopicRoot, info.topicName, info.partName)
-	leader, err := z.zk.GetLeader(path)
+	path := fmt.Sprintf(zookeeper.PNodePath, z.zk.TopicRoot, info.topicName, info.partName)
+	leader, replicas, err := z.zk.GetLeader(path)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return Info_out{Err: err}
+	}
+
+	//检查该Partition的状态是否设定
+	//检查该Partition在Brokers上是否创建raft集群或fetch
+	Brokers := make(map[string]string)
+	broker, ok := z.Brokers[leader.Name]
+	for _, replica := range replicas {
+		BrokerNode, err := z.zk.GetBrokerNode(replica.BrokerName)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+		}
+		Brokers[replica.BrokerName] = BrokerNode.BrokHostPort
+	}
+	replica := replicas[0]
+
+	data, err := json.Marshal(Brokers)
 	if err != nil {
 		logger.DEBUG(logger.DError, "%v\n", err.Error())
 	}
 
-	broker, ok := z.Brokers[leader.Name]
-	//未连接该broker
-	if !ok {
-		broker, err := server_operations.NewClient(z.Name, client.WithHostPorts(leader.BrokHostPort))
-		if err != nil {
+	for BrokerName, BrokerHostPort := range Brokers {
+		z.mu.RLock()
+		bro_cli, ok := z.Brokers[BrokerName]
+		z.mu.RUnlock()
+
+		//未连接该broker
+		if !ok {
+			bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(leader.BrokHostPort))
+			if err != nil {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+			}
+			z.mu.Lock()
+			z.Brokers[leader.Name] = bro_cli
+			z.mu.Unlock()
+		}
+
+		// 通知broker检查topic/partition，并创建队列准备接收信息
+		resp, err := broker.PrepareAccept(context.Background(), &api.PrepareAcceptRequest{
+			TopicName: info.topicName,
+			PartName:  info.partName,
+			FileName:  replica.FileName,
+		})
+		if err != nil || !resp.Ret {
 			logger.DEBUG(logger.DError, "%v\n", err.Error())
 		}
-		z.mu.Lock()
-		z.Brokers[leader.Name] = broker
-		z.mu.Unlock()
 	}
-
-	// 通知broker检查topic/partition，并创建队列准备接收信息
-	resp, err := broker.PrepareAccept(context.Background(), &api.PrepareAcceptRequest{
-		TopicName: info.topicName,
-		PartName:  info.partName,
-	})
 }
 
 func (z *ZKServer) HandleBroInfo(bro_name, bro_H_P string) error {

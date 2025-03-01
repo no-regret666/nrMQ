@@ -2,6 +2,8 @@ package server
 
 import (
 	"github.com/cloudwego/kitex/server"
+	"nrMQ/kitex_gen/raftoperations/raft_operations"
+	"nrMQ/logger"
 	"nrMQ/raft"
 	"sync"
 )
@@ -34,7 +36,7 @@ type parts_raft struct {
 	Leaders    map[string]bool
 
 	me      int
-	append  chan info
+	appench chan info
 	applyCh chan raft.ApplyMsg
 
 	maxraftstate int   //snapshot if log grows this big
@@ -60,7 +62,22 @@ func NewParts_Raft() *parts_raft {
 }
 
 func (p *parts_raft) Make(name string, opts []server.Option, appench chan info, me int) {
-	p.applyCh = appench
+	p.appench = appench
 	p.me = me
+	p.applyCh = make(chan raft.ApplyMsg)
+	p.Add = make(chan COMD)
 
+	p.CDM = make(map[string]map[string]int64)
+	p.CSM = make(map[string]map[string]int64)
+	p.Partitions = make(map[string]*raft.Raft)
+	p.applyindexs = make(map[string]int)
+	p.Leaders = make(map[string]bool)
+
+	srv_raft := raft_operations.NewServer(p, opts...)
+	p.srv_raft = srv_raft
+
+	err := srv_raft.Run()
+	if err != nil {
+		logger.DEBUG_RAFT(logger.DError, "the raft run fail %v\n", err.Error())
+	}
 }

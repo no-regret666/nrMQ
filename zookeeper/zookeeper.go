@@ -13,8 +13,8 @@ var (
 	BNodePath = "%v/%v"                       // BrokerRoot/BrokerName
 	TNodePath = "%v/%v/%v"                    // TopicRoot/TopicName
 	PNodePath = "%v/%v/%v"                    // TopicRoot/TopicName/PartName
-	SNodePath = "%v/%v/%v/subscription/%v"    // PNodePath/SubscriptionName
-	LNodePath = "%v/%v/%v/leader"             // PNodePath/leader
+	SNodePath = "%v/%v/%v/subscription/%v"    // PNodePath/subscription/SubscriptionName
+	RNodePath = "%v/%v/%v/replica/%v"         // PNodePath/replica/ReplicaName
 	SuberPath = "%v/%v/%v/subscription/%v/%v" // SNodePath/suberName
 )
 
@@ -67,8 +67,16 @@ type SubscriptionNode struct {
 	Subtype   string `json:"subtype"`
 }
 
-type LeaderNode struct {
-	LeaderBroker string `json:"leader_broker"`
+type ReplicaNode struct {
+	Name        string `json:"name"`
+	TopicName   string `json:"topicName"`
+	PartName    string `json:"partName"`
+	BrokerName  string `json:"brokerName"`
+	FileName    string `json:"fileName"`
+	StartOffset int64  `json:"startOffset"`
+	EndOffset   int64  `json:"endOffset"`
+
+	LeaderBroker string `json:"leaderBroker"`
 }
 
 type SuberNode struct {
@@ -218,28 +226,50 @@ func (z *ZK) GetPartitionNode(path string) (PartitionNode, error) {
 	return pnode, nil
 }
 
-func (z *ZK) GetLeader(path string) (BrokerNode, error) {
-	var lnode LeaderNode
-	path += "/leader"
+func (z *ZK) GetReplicaNode(path string) (ReplicaNode, error) {
+	var pnode ReplicaNode
 	ok, _, err := z.conn.Exists(path)
 	if !ok {
-		return BrokerNode{}, err
+		return pnode, err
 	}
 	data, _, _ := z.conn.Get(path)
-	err = json.Unmarshal(data, &lnode)
-	BrokerName := lnode.LeaderBroker
+	err = json.Unmarshal(data, &pnode)
+	return pnode, nil
+}
+
+func (z *ZK) GetReplicaNodes(path string) (nodes []ReplicaNode) {
+	Dups, _, _ := z.conn.Children(path)
+	for _, dupName := range Dups {
+		DupNode, err := z.GetReplicaNode(path + "/" + dupName)
+		if err != nil {
+			logger.DEBUG(logger.DError, "the replica node %v doesn't exist", path+"/"+dupName)
+		} else {
+			nodes = append(nodes, DupNode)
+		}
+	}
+	return nodes
+}
+
+func (z *ZK) GetLeader(path string) (BrokerNode, []ReplicaNode, error) {
+	path += "/duplication"
 
 	// 若leader不在线，则等待一秒继续请求
 	for {
+		replicas := z.GetReplicaNodes(path)
+		BrokerName := ""
+		for _, replica := range replicas {
+			BrokerName = replica.LeaderBroker
+			break
+		}
 		Broker, err := z.GetBrokerNode(BrokerName)
 		if err != nil {
 			logger.DEBUG(logger.DError, "get broker node fail,path %v err is %v\n", path, err.Error())
-			return BrokerNode{}, err
+			return BrokerNode{}, replicas, err
 		}
 		logger.DEBUG(logger.DLog, "the leader broker is %v \n", BrokerName)
 		ret := z.CheckBroker(BrokerName)
 		if ret {
-			return Broker, nil
+			return Broker, replicas, nil
 		} else {
 			logger.DEBUG(logger.DLog, "the broker %v is not online\n", BrokerName)
 			time.Sleep(time.Second * 1)

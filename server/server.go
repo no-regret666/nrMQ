@@ -161,13 +161,13 @@ func (s *Server) PrepareAcceptHandle(in info) (ret string, err error) {
 func (s *Server) PushHandle(in info) (ret string, err error) {
 	logger.DEBUG(logger.DLog, "get Message from producer\n")
 	s.mu.RLock()
-	topic, ok := s.topics[in.topic_name]
+	topic, ok := s.topics[in.topicName]
 	part_raft := s.pafts_rafts
 	s.mu.RUnlock()
 
 	if !ok {
 		ret = "this topic is not in this broker"
-		logger.DEBUG(logger.DError, "Topic %v,is not in this broker", in.topic_name)
+		logger.DEBUG(logger.DError, "Topic %v,is not in this broker", in.topicName)
 		return ret, errors.New(ret)
 	}
 

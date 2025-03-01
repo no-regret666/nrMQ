@@ -66,7 +66,7 @@ func (p *Producer) Push(msg Message, ack int) error {
 	p.mu.RUnlock()
 
 	if !ok1 {
-		resp, err := zk.ProGetBroker(context.Background(), &api.ProGetBrokRequest{
+		resp, err := zk.ProGetLeader(context.Background(), &api.ProGetLeaderRequest{
 			TopicName: msg.Topic,
 			PartName:  msg.Partition,
 		})

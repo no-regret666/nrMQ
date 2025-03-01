@@ -18,9 +18,9 @@ package raft
 //
 
 import (
-	"6.5840/labgob"
 	"bytes"
 	"log"
+	"nrMQ/kitex_gen/raftoperations/raft_operations"
 	"sort"
 
 	//	"bytes"
@@ -28,9 +28,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	//	"6.5840/labgob"
-	"6.5840/labrpc"
 )
 
 const heartBeatTimeout time.Duration = 100 * time.Millisecond
@@ -58,11 +55,11 @@ type ApplyMsg struct {
 
 // A Go object implementing a single Raft peer.
 type Raft struct {
-	mu        sync.RWMutex        // Lock to protect shared access to this peer's state
-	peers     []*labrpc.ClientEnd // RPC end points of all peers
-	persister *Persister          // Object to hold this peer's persisted state
-	me        int                 // this peer's index into peers[]
-	dead      int32               // set by Kill()
+	mu        sync.RWMutex              // Lock to protect shared access to this peer's state
+	peers     []*raft_operations.Client // RPC end points of all peers
+	persister *Persister                // Object to hold this peer's persisted state
+	me        int                       // this peer's index into peers[]
+	dead      int32                     // set by Kill()
 
 	// Your data here (3A, 3B, 3C).
 	// Look at the paper's Figure 2 for a description of what
@@ -119,16 +116,7 @@ func (rf *Raft) persist() {
 	// raftstate := w.Bytes()
 	// rf.persister.Save(raftstate, nil)
 	w := new(bytes.Buffer)
-	e := labgob.NewEncoder(w)
-	if e.Encode(rf.currentTerm) != nil || e.Encode(rf.votedFor) != nil || e.Encode(rf.log) != nil {
-		log.Printf("persist failed for term %d: %v", rf.currentTerm, e)
-	}
-	raftState := w.Bytes()
-	if rf.log[0].Index > 0 {
-		rf.persister.Save(raftState, rf.snapshot)
-	} else {
-		rf.persister.Save(raftState, nil)
-	}
+	e := NewEncoder
 }
 
 // restore previously persisted state.

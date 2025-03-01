@@ -64,7 +64,7 @@ func (t *Topic) PrepareAcceptHandle(in info) (ret string, err error) {
 	//设置partition中的file和fd,start_index等信息
 	str, _ := os.Getwd()
 	str += "/" + t.Broker + "/" + in.topicName + "/" + in.partName + "/" + in.fileName
-	file, fd, Err, err := newFile(str)
+	file, fd, Err, err := NewFile(str)
 	if err != nil {
 		return Err, err
 	}
@@ -81,11 +81,11 @@ func (t *Topic) PrepareAcceptHandle(in info) (ret string, err error) {
 
 func (t *Topic) CloseAcceptPart(in info) (start, end int64, ret string, err error) {
 	t.mu.Lock()
-	partition, ok := t.Parts[in.part_name]
+	partition, ok := t.Parts[in.partName]
 	t.mu.Unlock()
 	if !ok {
 		ret = "this partition is not in the broker"
-		logger.DEBUG(logger.DError, "this partition (%v) is not in this broker\n", in.part_name)
+		logger.DEBUG(logger.DError, "this partition (%v) is not in this broker\n", in.partName)
 		return 0, 0, ret, errors.New(ret)
 	}
 	start, end, ret, err = partition.CloseAcceptMessage(in)
@@ -93,10 +93,10 @@ func (t *Topic) CloseAcceptPart(in info) (start, end int64, ret string, err erro
 		logger.DEBUG(logger.DError, "%v\n", err.Error())
 	} else {
 		str, _ := os.Getwd()
-		str += "/" + t.Broker + "/" + in.topic_name + "/" + in.part_name + "/"
+		str += "/" + t.Broker + "/" + in.topicName + "/" + in.partName + "/"
 		t.mu.Lock()
-		t.Files[str+in.new_name] = t.Files[str+in.file_name]
-		delete(t.Files, str+in.file_name)
+		t.Files[str+in.newName] = t.Files[str+in.fileName]
+		delete(t.Files, str+in.fileName)
 		t.mu.Unlock()
 	}
 	return start, end, ret, err
@@ -104,18 +104,18 @@ func (t *Topic) CloseAcceptPart(in info) (start, end int64, ret string, err erro
 
 func (t *Topic) addMessage(in info) error {
 	t.mu.RLock()
-	part, ok := t.Parts[in.part_name]
+	part, ok := t.Parts[in.partName]
 	t.mu.RUnlock()
 
 	if !ok {
 		logger.DEBUG(logger.DError, "not find this part in add message\n")
-		part := NewPartition(t.Broker, in.topic_name, in.part_name) //new a Partition //需要向sub中和config中加入一个partition
+		part := NewPartition(t.Broker, in.topicName, in.partName) //new a Partition //需要向sub中和config中加入一个partition
 		t.mu.Lock()
-		t.Parts[in.part_name] = part
+		t.Parts[in.partName] = part
 		t.mu.Unlock()
 	}
 
-	logger.DEBUG(logger.DLog, "topic(%v) use partition(%v) addMessage\n", t.Name, in.part_name)
+	logger.DEBUG(logger.DLog, "topic(%v) use partition(%v) addMessage\n", t.Name, in.partName)
 	part.AddMessage(in)
 
 	return nil
@@ -172,8 +172,8 @@ func (p *Partition) StartGetMessage(file *File, fd *os.File, in info) string {
 		p.state = ALIVE
 		p.file = file
 		p.fd = fd
-		p.file_name = in.file_name
-		p.index = file.GetIndex(fd)
+		p.file_name = in.fileName
+		p.index, _ = file.GetIndex(fd)
 		p.start_index = p.index
 		ret = OK
 	}
@@ -185,9 +185,9 @@ func (p *Partition) CloseAcceptMessage(in info) (start, end int64, ret string, e
 	defer p.mu.Unlock()
 	if p.state == ALIVE {
 		str, _ := os.Getwd()
-		str += "/" + p.Broker + "/" + in.topic_name + "/" + in.part_name
-		err = p.file.Update(str, in.new_name) //修改本地文件名
-		p.file_name = in.new_name
+		str += "/" + p.Broker + "/" + in.topicName + "/" + in.partName
+		err = p.file.Update(str, in.newName) //修改本地文件名
+		p.file_name = in.newName
 		p.state = DOWN
 		end = p.index
 		start = p.file.GetFirstIndex(p.fd)
@@ -208,6 +208,7 @@ func (p *Partition) GetFile() *File {
 
 func (p *Partition) AddMessage(in info) (ret string, err error) {
 	p.mu.Lock()
+	defer p.mu.Unlock()
 	if p.state == DOWN {
 		ret := "this partition had close"
 		logger.DEBUG(logger.DLog, "%v\n", ret)
@@ -217,8 +218,8 @@ func (p *Partition) AddMessage(in info) (ret string, err error) {
 	msg := Message{
 		Index:      p.index,
 		Size:       in.size,
-		Topic_name: in.topic_name,
-		Part_name:  in.part_name,
+		Topic_name: in.topicName,
+		Part_name:  in.partName,
 		Msg:        in.message,
 	}
 	logger.DEBUG(logger.DLog, "part_name(%v) add message %v index is %v size is %v\n", p.key, msg, p.index, p.index-p.start_index)
@@ -253,12 +254,11 @@ func (p *Partition) AddMessage(in info) (ret string, err error) {
 		p.queue = p.queue[VIRTUAL_10:]
 	}
 
-	p.mu.Unlock()
 	(*in.zkclient).UpdateDup(context.Background(), &api.UpdateDupRequest{
-		Topic:      in.topic_name,
-		Part:       in.part_name,
+		Topic:      in.topicName,
+		Part:       in.partName,
 		BrokerName: in.BrokerName,
-		BlockName:  GetBlockName(in.file_name),
+		BlockName:  GetBlockName(in.fileName),
 		EndIndex:   p.index,
 	})
 
@@ -270,6 +270,6 @@ type SubScription struct {
 	name       string
 	topic_name string
 
-	option int8 //PTP / PSB
+	option int8 // PTP / PSB
 
 }

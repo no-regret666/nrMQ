@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
 	"nrMQ/logger"
 	"os"
 	"sync"
@@ -38,6 +39,38 @@ func NewFile(path_name string) (file *File, fd *os.File, Err string, err error) 
 		node_size: NODE_SIZE,
 	}
 	return file, fd, "ok", err
+}
+
+// 读取文件，获取该partition的最后一个index
+func (f *File) GetIndex(file *os.File) (int64, error) {
+	var node Key
+	var offset int64
+	dataNode := make([]byte, NODE_SIZE)
+
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+
+	for {
+		//从文件中读取数据块
+		n, err := file.ReadAt(dataNode, offset)
+		if err != nil {
+			if err == io.EOF {
+				//读到文件末尾，返回最后一个End_index
+				return node.End_index, nil
+			}
+			//其他错误直接返回
+			return -1, err
+		}
+
+		//解析数据块
+		buf := bytes.NewBuffer(dataNode[:n])
+		if err := binary.Read(buf, binary.BigEndian, &node); err != nil {
+			return -1, err
+		}
+
+		//更新偏移量
+		offset += int64(n)
+	}
 }
 
 func (f *File) WriteFile(file *os.File, node Key, data_msg []byte) bool {

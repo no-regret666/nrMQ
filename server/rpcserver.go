@@ -141,6 +141,7 @@ func (s *RPCServer) PrepareAccept(ctx context.Context, req *api.PrepareAcceptReq
 	ret, err := s.server.PrepareAcceptHandle(info{
 		topicName: req.TopicName,
 		partName:  req.PartName,
+		fileName:  req.FileName,
 	})
 	if err != nil {
 		return &api.PrepareAcceptResponse{
@@ -190,10 +191,10 @@ func (s *RPCServer) ConInfo(ctx context.Context, req *api.InfoRequest) (r *api.I
 // consumer---->broker server
 func (s *RPCServer) StartToGet(ctx context.Context, req *api.InfoGetRequest) (r *api.InfoGetResponse, err error) {
 	err = s.server.StartGet(info{
-		consumer:   req.CliName,
-		topic_name: req.TopicName,
-		part_name:  req.PartName,
-		offset:     req.Offset,
+		consumer:  req.CliName,
+		topicName: req.TopicName,
+		partName:  req.PartName,
+		offset:    req.Offset,
 	})
 
 	if err == nil {
@@ -209,12 +210,12 @@ func (s *RPCServer) StartToGet(ctx context.Context, req *api.InfoGetRequest) (r 
 func (s *RPCServer) Pull(ctx context.Context, req *api.PullRequest) (r *api.PullResponse, err error) {
 	Err := "ok"
 	ret, err := s.server.PullHandle(info{
-		consumer:   req.Consumer,
-		topic_name: req.Topic,
-		part_name:  req.Key,
-		size:       req.Size,
-		offset:     req.Offset,
-		option:     req.Option,
+		consumer:  req.Consumer,
+		topicName: req.Topic,
+		partName:  req.Key,
+		size:      req.Size,
+		offset:    req.Offset,
+		option:    req.Option,
 	})
 	if err != nil {
 		if err == io.EOF && ret.size == 0 {
@@ -235,10 +236,10 @@ func (s *RPCServer) Pull(ctx context.Context, req *api.PullRequest) (r *api.Pull
 
 func (s *RPCServer) Sub(ctx context.Context, req *api.SubRequest) (r *api.SubResponse, err error) {
 	err = s.zkserver.SubHandle(Info_in{
-		cli_name:   req.Consumer,
-		topic_name: req.Topic,
-		part_name:  req.Key,
-		option:     req.Option,
+		cliName:   req.Consumer,
+		topicName: req.Topic,
+		partName:  req.Key,
+		option:    req.Option,
 	})
 
 	if err == nil {
@@ -252,11 +253,11 @@ func (s *RPCServer) Sub(ctx context.Context, req *api.SubRequest) (r *api.SubRes
 
 func (s *RPCServer) ConStartGetBroker(ctx context.Context, req *api.ConStartGetBrokRequest) (r *api.ConStartGetBrokResponse, err error) {
 	parts, size, err := s.zkserver.HandStartGetBroker(Info_in{
-		cli_name:   req.CliName,
-		topic_name: req.TopicName,
-		part_name:  req.PartName,
-		option:     req.Option,
-		index:      req.Index,
+		cliName:   req.CliName,
+		topicName: req.TopicName,
+		partName:  req.PartName,
+		option:    req.Option,
+		index:     req.Index,
 	})
 	if err != nil {
 		return &api.ConStartGetBrokResponse{
@@ -277,10 +278,10 @@ func (s *RPCServer) ConStartGetBroker(ctx context.Context, req *api.ConStartGetB
 // 调用者需向zookeeper修改节点信息
 func (s *RPCServer) CloseAccept(ctx context.Context, req *api.CloseAcceptRequest) (r *api.CloseAcceptResponse, err error) {
 	start, end, ret, err := s.server.CloseAcceptHandle(info{
-		topic_name: req.TopicName,
-		part_name:  req.PartName,
-		file_name:  req.Oldfilename,
-		new_name:   req.Newfilename_,
+		topicName: req.TopicName,
+		partName:  req.PartName,
+		fileName:  req.Oldfilename,
+		newName:   req.Newfilename_,
 	})
 	if err != nil {
 		logger.DEBUG(logger.DError, "Err %v err(%v)\n", ret, err.Error())
@@ -305,12 +306,12 @@ func (s *RPCServer) PrepareState(ctx context.Context, req *api.PrepareStateReque
 // 通知broker准备向consumer发送信息
 func (s *RPCServer) PrepareSend(ctx context.Context, req *api.PrepareSendRequest) (r *api.PrepareSendResponse, err error) {
 	ret, err := s.server.PrepareSendHandle(info{
-		consumer:   req.Consumer,
-		topic_name: req.TopicName,
-		part_name:  req.PartName,
-		option:     req.Option,
-		file_name:  req.FileName,
-		offset:     req.Offset,
+		consumer:  req.Consumer,
+		topicName: req.TopicName,
+		partName:  req.PartName,
+		option:    req.Option,
+		fileName:  req.FileName,
+		offset:    req.Offset,
 	})
 	if err != nil {
 		return &api.PrepareSendResponse{
