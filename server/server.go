@@ -6,9 +6,9 @@ import (
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/server"
 	"nrMQ/kitex_gen/api"
+	"nrMQ/kitex_gen/api/raft_operations"
 	"nrMQ/kitex_gen/api/server_operations"
 	"nrMQ/kitex_gen/api/zkserver_operations"
-	"nrMQ/kitex_gen/raftoperations/raft_operations"
 	"nrMQ/logger"
 	"nrMQ/zookeeper"
 	"sync"
@@ -31,7 +31,7 @@ type Server struct {
 	brokers   map[string]*raft_operations.Client
 
 	//raft
-	pafts_rafts *parts_raft
+	parts_rafts *parts_raft
 
 	//fetch
 	parts_fetch   map[string]string                    //topicName + partitionName to broker HostPort
@@ -65,6 +65,7 @@ type info struct {
 
 	producer string
 	consumer string
+	cmdIndex int64
 	message  []byte
 
 	//raft
@@ -162,7 +163,7 @@ func (s *Server) PushHandle(in info) (ret string, err error) {
 	logger.DEBUG(logger.DLog, "get Message from producer\n")
 	s.mu.RLock()
 	topic, ok := s.topics[in.topicName]
-	part_raft := s.pafts_rafts
+	part_raft := s.parts_rafts
 	s.mu.RUnlock()
 
 	if !ok {

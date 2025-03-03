@@ -4,6 +4,7 @@ import (
 	"context"
 	api "nrMQ/kitex_gen/api"
 	operations "nrMQ/kitex_gen/api"
+	raftoperations "nrMQ/kitex_gen/raftoperations"
 )
 
 // ZkServer_OperationImpl implements the last service interface defined in the IDL.
@@ -41,6 +42,24 @@ func (s *Client_OperationsImpl) Pub(ctx context.Context, req *api.PubRequest) (r
 
 // Pingpong implements the Client_OperationsImpl interface.
 func (s *Client_OperationsImpl) Pingpong(ctx context.Context, req *api.PingPongRequest) (resp *api.PingPongResponse, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// RequestVote implements the Raft_OperationsImpl interface.
+func (s *Raft_OperationsImpl) RequestVote(ctx context.Context, args_ *raftoperations.RequestVoteArgs_) (resp *raftoperations.RequestVoteReply, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// AppendEntries implements the Raft_OperationsImpl interface.
+func (s *Raft_OperationsImpl) AppendEntries(ctx context.Context, args_ *raftoperations.AppendEntriesArgs_) (resp *raftoperations.AppendEntriesReply, err error) {
+	// TODO: Your code here...
+	return
+}
+
+// InstallSnapshot implements the Raft_OperationsImpl interface.
+func (s *Raft_OperationsImpl) InstallSnapshot(ctx context.Context, args_ *raftoperations.InstallSnapshotArgs_) (resp *raftoperations.InstallSnapshotReply, err error) {
 	// TODO: Your code here...
 	return
 }

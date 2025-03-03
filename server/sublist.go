@@ -158,7 +158,7 @@ func NewPartition(broker_name, topic_name, part_name string) *Partition {
 
 const (
 	ErrHadStart = "this partition had start"
-	OK          = "start partition successfully"
+	OK          = "ok"
 )
 
 func (p *Partition) StartGetMessage(file *File, fd *os.File, in info) string {

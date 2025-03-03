@@ -19,8 +19,11 @@ package raft
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"log"
-	"nrMQ/kitex_gen/raftoperations/raft_operations"
+	"nrMQ/kitex_gen/api"
+	"nrMQ/kitex_gen/api/raft_operations"
 	"sort"
 
 	//	"bytes"
@@ -42,8 +45,12 @@ const heartBeatTimeout time.Duration = 100 * time.Millisecond
 // snapshots) on the applyCh, but set CommandValid to false for these
 // other uses.
 type ApplyMsg struct {
+	TopicName    string
+	PartName     string
+	BeLeader     bool
+	Leader       int
 	CommandValid bool
-	Command      interface{}
+	Command      Operation
 	CommandIndex int
 
 	// For 3D:
@@ -72,22 +79,22 @@ type Raft struct {
 	time            time.Time     //开始计算选举超时的时间
 	//heartBeatTimeout time.Duration //心跳超时时间
 	//lastHeartBeat    time.Time     //上一次心跳时间
-	state             string        //当前身份
-	applyCh           chan ApplyMsg //应用状态机通道
-	commitIndex       int           //已提交的最高的日志条目的索引
-	lastApplied       int           //已经被应用到状态机的最高的日志条目的索引
-	nextIndex         []int         //对于每一台服务器，发送到该服务器的下一个日志条目的索引
-	matchIndex        []int         //对于每一台服务器，已知的已经复制到该服务器的最高日志条目的索引
-	applyCond         *sync.Cond
-	snapshot          []byte //日志快照
-	lastIncludedIndex int
-	lastIncludedTerm  int
+	state       string        //当前身份
+	applyCh     chan ApplyMsg //应用状态机通道
+	commitIndex int           //已提交的最高的日志条目的索引
+	lastApplied int           //已经被应用到状态机的最高的日志条目的索引
+	nextIndex   []int         //对于每一台服务器，发送到该服务器的下一个日志条目的索引
+	matchIndex  []int         //对于每一台服务器，已知的已经复制到该服务器的最高日志条目的索引
+	applyCond   *sync.Cond
+	snapshot    []byte //日志快照
 }
 
 type Log struct {
-	Term    int
-	Index   int
-	Command interface{}
+	Term     int
+	Index    int
+	BeLeader bool
+	Leader   int
+	Command  Operation
 }
 
 // return currentTerm and whether this server
@@ -97,6 +104,14 @@ func (rf *Raft) GetState() (int, bool) {
 	rf.mu.RLock()
 	defer rf.mu.RUnlock()
 	return rf.currentTerm, rf.state == "Leader"
+}
+
+func (rf *Raft) RaftSize() (int, int) {
+	rf.mu.Lock()
+	XSize := rf.log[0].Index
+	rf.mu.Unlock()
+
+	return XSize, rf.persister.RaftStateSize()
 }
 
 // save Raft's persistent state to stable storage,
@@ -116,7 +131,16 @@ func (rf *Raft) persist() {
 	// raftstate := w.Bytes()
 	// rf.persister.Save(raftstate, nil)
 	w := new(bytes.Buffer)
-	e := NewEncoder
+	e := NewEncoder(w)
+	if e.Encode(rf.currentTerm) != nil || e.Encode(rf.votedFor) != nil || e.Encode(rf.log) != nil {
+		log.Printf("Persist failed for term %d:%v\n", rf.currentTerm, e)
+	}
+	raftState := w.Bytes()
+	if rf.log[0].Index > 0 {
+		rf.persister.Save(raftState, rf.snapshot)
+	} else {
+		rf.persister.Save(raftState, nil)
+	}
 }
 
 // restore previously persisted state.
@@ -138,7 +162,7 @@ func (rf *Raft) readPersist(data []byte) {
 		return
 	}
 	r := bytes.NewBuffer(data)
-	d := labgob.NewDecoder(r)
+	d := NewDecoder(r)
 	var tmpCurrentTerm int
 	var tmpVotedFor int
 	var tmpLog []Log
@@ -207,8 +231,9 @@ type RequestVoteReply struct {
 }
 
 // example RequestVote RPC handler.
-func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
+func (rf *Raft) RequestVote(args *RequestVoteArgs) *RequestVoteReply {
 	// Your code here (3A, 3B).
+	reply := &RequestVoteReply{}
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	defer rf.persist()
@@ -216,7 +241,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		reply.Term = rf.currentTerm
 		reply.VoteGranted = false
 		DPrintf("[%d] %d的任期大于%d或者在当前任期已经投出过选票，拒绝投票", rf.currentTerm, rf.me, args.CandidateId)
-		return
+		return reply
 	}
 	if args.Term > rf.currentTerm {
 		rf.state = "Follower"
@@ -229,7 +254,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		reply.Term = rf.currentTerm
 		reply.VoteGranted = false
 		DPrintf("[%d} %d的日志比%d的日志新，拒绝投票", rf.currentTerm, rf.me, args.CandidateId)
-		return
+		return reply
 	}
 
 	rf.votedFor = args.CandidateId
@@ -237,6 +262,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	reply.Term = rf.currentTerm
 	reply.VoteGranted = true
 	DPrintf("[%d] %d agree %d to become leader", rf.currentTerm, rf.me, rf.votedFor)
+	return reply
 }
 
 type AppendEntriesArgs struct {
@@ -256,8 +282,8 @@ type AppendEntriesReply struct {
 	XIndex  int //对应任期号为XTerm的第一条Log的槽位号/下一条日志索引
 }
 
-func (rf *Raft) AppendEntries(args *AppendEntriesArgs,
-	reply *AppendEntriesReply) {
+func (rf *Raft) AppendEntries(args *AppendEntriesArgs) *AppendEntriesReply {
+	reply := &AppendEntriesReply{}
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	defer rf.persist()
@@ -266,7 +292,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs,
 	reply.XTerm = -1
 	reply.XIndex = -1
 	if args.Term < rf.currentTerm {
-		return
+		return reply
 	}
 	if args.Term > rf.currentTerm {
 		rf.currentTerm = args.Term
@@ -276,17 +302,17 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs,
 	rf.resetTimeout()
 	if args.PrevLogIndex < rf.log[0].Index { //过期RPC
 		reply.Success = true
-		return
+		return reply
 	} else if args.PrevLogIndex > rf.log[len(rf.log)-1].Index { //prevLogIndex处不存在日志
 		reply.XTerm = -1
 		reply.XIndex = rf.log[len(rf.log)-1].Index + 1
 		DPrintf("[%d] %d's logs are less than the leader %d's", rf.currentTerm, rf.me, args.LeaderId)
-		return
+		return reply
 	} else if args.PrevLogIndex == rf.log[0].Index && args.PrevLogTerm != rf.log[0].Term {
 		reply.XTerm = rf.log[0].Term
 		reply.XIndex = args.PrevLogIndex - 1
 		DPrintf("[%d] %d 's logs conflict with the leader's", rf.currentTerm, rf.me)
-		return
+		return reply
 	} else if args.PrevLogIndex != rf.log[0].Index && args.PrevLogTerm != rf.log[args.PrevLogIndex-rf.log[0].Index].Term {
 		reply.XTerm = rf.log[args.PrevLogIndex-rf.log[0].Index].Term
 		index := args.PrevLogIndex
@@ -295,7 +321,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs,
 		}
 		reply.XIndex = index + 1
 		DPrintf("[%d] %d 's logs conflict with the leader's", rf.currentTerm, rf.me)
-		return
+		return reply
 	}
 
 	if len(args.Log) != 0 {
@@ -311,6 +337,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs,
 		rf.applyCond.Signal()
 	}
 	reply.Success = true
+	return reply
 }
 
 type InstallSnapshotArgs struct {
@@ -326,14 +353,15 @@ type InstallSnapshotReply struct {
 	Success bool
 }
 
-func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapshotReply) {
+func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs) *InstallSnapshotReply {
+	reply := &InstallSnapshotReply{}
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	defer rf.persist()
 	reply.Success = false
 	if args.Term < rf.currentTerm || args.LastIncludedIndex <= rf.log[0].Index {
 		reply.Term = rf.currentTerm
-		return
+		return reply
 	}
 	if args.Term > rf.currentTerm {
 		rf.currentTerm = args.Term
@@ -363,6 +391,7 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 	reply.Term = rf.currentTerm
 	DPrintf("[%d] %d 成功接收来自 %d 的日志快照到索引 %d", rf.currentTerm, rf.me, args.LeaderId, args.LastIncludedIndex)
 	reply.Success = true
+	return reply
 }
 
 // example code to send a RequestVote RPC to a server.
@@ -392,19 +421,63 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 // capitalized all field names in structs passed over RPC, and
 // that the caller passes the address of the reply struct with &, not
 // the struct itself.
-func (rf *Raft) callRequestVote(server int, args *RequestVoteArgs, reply *RequestVoteReply) bool {
-	ok := rf.peers[server].Call("Raft.RequestVote", args, reply)
-	return ok
+func (rf *Raft) callRequestVote(server int, args *RequestVoteArgs) (*RequestVoteReply, bool) {
+	reply, err := (*(rf.peers[server])).RequestVote(context.Background(), &api.RequestVoteArgs_{
+		Term:         int8(args.Term),
+		CandidateId:  int8(args.CandidateId),
+		LastLogIndex: int8(args.LastLogIndex),
+		LastLogTerm:  int8(args.LastLogTerm),
+	})
+	if err != nil {
+		return nil, false
+	} else {
+		return &RequestVoteReply{
+			Term:        int(reply.Term),
+			VoteGranted: reply.VoteGranted,
+		}, true
+	}
 }
 
-func (rf *Raft) callAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
-	ok := rf.peers[server].Call("Raft.AppendEntries", args, reply)
-	return ok
+func (rf *Raft) callAppendEntries(server int, args *AppendEntriesArgs) (*AppendEntriesReply, bool) {
+	log_, _ := json.Marshal(args.Log)
+	reply, err := (*(rf.peers[server])).AppendEntries(context.Background(), &api.AppendEntriesArgs_{
+		Term:         int8(args.Term),
+		LeaderId:     int8(args.LeaderId),
+		PrevLogIndex: int8(args.PrevLogIndex),
+		PrevLogTerm:  int8(args.PrevLogTerm),
+		Log:          log_,
+		LeaderCommit: int8(args.LeaderCommit),
+		LogIndex:     int8(args.LogIndex),
+	})
+	if err != nil {
+		return nil, false
+	} else {
+		return &AppendEntriesReply{
+			Term:    int(reply.Term),
+			Success: reply.Success,
+			XTerm:   int(reply.XTerm),
+			XIndex:  int(reply.XIndex),
+		}, true
+	}
 }
 
-func (rf *Raft) callInstallSnapshot(server int, args *InstallSnapshotArgs, reply *InstallSnapshotReply) bool {
-	ok := rf.peers[server].Call("Raft.InstallSnapshot", args, reply)
-	return ok
+func (rf *Raft) callInstallSnapshot(server int, args *InstallSnapshotArgs) (*InstallSnapshotReply, bool) {
+	snapshot_, _ := json.Marshal(args.Snapshot)
+	reply, err := (*(rf.peers[server])).InstallSnapshot(context.Background(), &api.InstallSnapshotArgs_{
+		Term:              int8(args.Term),
+		LeaderId:          int8(args.LeaderId),
+		LastIncludedIndex: int8(args.LastIncludedIndex),
+		LastIncludedTerm:  int8(args.LastIncludedTerm),
+		Snapshot:          snapshot_,
+	})
+	if err != nil {
+		return nil, false
+	} else {
+		return &InstallSnapshotReply{
+			Term:    int(reply.Term),
+			Success: reply.Success,
+		}, true
+	}
 }
 
 // the service using Raft (e.g. a k/v server) wants to start
@@ -419,7 +492,7 @@ func (rf *Raft) callInstallSnapshot(server int, args *InstallSnapshotArgs, reply
 // if it's ever committed. the second return value is the current
 // term. the third return value is true if this server believes it is
 // the leader.
-func (rf *Raft) Start(command interface{}) (int, int, bool) {
+func (rf *Raft) Start(command Operation) (int, int, bool) {
 	// Your code here (3B).
 	if _, is := rf.GetState(); is == false {
 		return -1, -1, false
@@ -483,8 +556,7 @@ func (rf *Raft) startElection() {
 			continue
 		}
 		go func(peer int) {
-			reply := RequestVoteReply{}
-			if rf.callRequestVote(peer, &args, &reply) {
+			if reply, ok := rf.callRequestVote(peer, &args); ok {
 				DPrintf("[%d] %d 向 %d 发送requestVote", rf.currentTerm, rf.me, peer)
 				rf.mu.Lock()
 				defer rf.mu.Unlock()
@@ -599,20 +671,18 @@ func (rf *Raft) sendHeartbeat(peer int) {
 	if sendInstallSnapshot {
 		args := rf.genInstallSnapshotArgs()
 		rf.mu.Unlock()
-		reply := InstallSnapshotReply{}
-		if rf.callInstallSnapshot(peer, &args, &reply) {
+		if reply, ok := rf.callInstallSnapshot(peer, &args); ok {
 			rf.mu.Lock()
-			rf.handleInstallSnapshotReply(peer, args, reply)
+			rf.handleInstallSnapshotReply(peer, args, *reply)
 			rf.persist()
 			rf.mu.Unlock()
 		}
 	} else {
 		args := rf.genAppendEntriesArgs(peer)
 		rf.mu.Unlock()
-		reply := AppendEntriesReply{}
-		if rf.callAppendEntries(peer, &args, &reply) {
+		if reply, ok := rf.callAppendEntries(peer, &args); ok {
 			rf.mu.Lock()
-			rf.handleAppendEntriesReply(peer, args, reply)
+			rf.handleAppendEntriesReply(peer, args, *reply)
 			rf.persist()
 			rf.mu.Unlock()
 		}
@@ -733,6 +803,23 @@ func (rf *Raft) applyCommited() {
 	}
 }
 
+//	if _, is := rf.GetState(); is == false {
+//		return -1, -1, false
+//	}
+//
+// rf.mu.Lock()
+// defer rf.mu.Unlock()
+//
+//	newLog := Log{
+//		Term:    rf.currentTerm,
+//		Index:   len(rf.log) + rf.log[0].Index,
+//		Command: command,
+//	}
+//
+// rf.log = append(rf.log, newLog)
+// rf.persist()
+// DPrintf("[%d] %d receive a new command %v,then append at %d", rf.currentTerm, rf.me, command, newLog.Index)
+// return newLog.Index, newLog.Term, true
 // the service or tester wants to create a Raft server. the ports
 // of all the Raft servers (including this one) are in peers[]. this
 // server's port is peers[me]. all the servers' peers[] arrays
@@ -742,7 +829,7 @@ func (rf *Raft) applyCommited() {
 // tester or service expects Raft to send ApplyMsg messages.
 // Make() must return quickly, so it should start goroutines
 // for any long-running work.
-func Make(peers []*labrpc.ClientEnd, me int,
+func Make(peers []*raft_operations.Client, me int,
 	persister *Persister, applyCh chan ApplyMsg) *Raft {
 	rf := &Raft{}
 	rf.peers = peers
@@ -753,7 +840,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.state = "Follower"
 	rf.currentTerm = 0
 	rf.votedFor = -1
-	rf.log = []Log{{0, 0, nil}}
+	rf.log = []Log{}
 	rf.commitIndex = 0
 	rf.lastApplied = 0
 	rf.nextIndex = make([]int, len(rf.peers))
@@ -776,4 +863,18 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	go rf.applyCommited()
 
 	return rf
+}
+
+type Operation struct {
+	Cli_name  string // client的唯一标识
+	Cmd_index int64  // 操作id号
+	Ser_index int64  // Server的id
+	Operate   string // 这里的操作只有append
+	Tpart     string // 这里的shard为topic_partition
+	Topic     string
+	Part      string
+	Num       int
+
+	Msg  []byte
+	Size int8
 }
