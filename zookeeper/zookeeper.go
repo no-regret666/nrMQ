@@ -64,7 +64,7 @@ type SubscriptionNode struct {
 	Name      string `json:"name"`
 	TopicName string `json:"topicName"`
 	PartName  string `json:"partName"`
-	Subtype   string `json:"subtype"`
+	Subtype   int8   `json:"subtype"`
 }
 
 type ReplicaNode struct {
@@ -93,6 +93,9 @@ func (z *ZK) RegisterNode(znode interface{}) (err error) {
 	path := ""
 	var data []byte
 	var bnode BrokerNode
+	var tnode TopicNode
+	var pnode PartitionNode
+	var snode SubscriptionNode
 
 	i := reflect.TypeOf(znode)
 	switch i.Name() {
@@ -100,6 +103,18 @@ func (z *ZK) RegisterNode(znode interface{}) (err error) {
 		bnode = znode.(BrokerNode)
 		path = fmt.Sprintf(BNodePath, z.BrokerRoot, bnode.Name)
 		data, err = json.Marshal(bnode)
+	case "TopicNode":
+		tnode = znode.(TopicNode)
+		path = fmt.Sprintf(TNodePath, z.TopicRoot, tnode.Name)
+		data, err = json.Marshal(tnode)
+	case "PartitionNode":
+		pnode = znode.(PartitionNode)
+		path = fmt.Sprintf(PNodePath, z.TopicRoot, pnode.TopicName, pnode.Name)
+		data, err = json.Marshal(pnode)
+	case "SubscriptionNode":
+		snode = znode.(SubscriptionNode)
+		path = fmt.Sprintf(SNodePath, z.TopicRoot, snode.TopicName, snode.PartName, snode.Name)
+		data, err = json.Marshal(snode)
 	}
 
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"nrMQ/kitex_gen/api"
+	"nrMQ/kitex_gen/api/client_operations"
 	"nrMQ/logger"
 	"os"
 	"sync"
@@ -266,10 +267,103 @@ func (p *Partition) AddMessage(in info) (ret string, err error) {
 }
 
 type SubScription struct {
-	rmu        sync.RWMutex
+	mu         sync.RWMutex
 	name       string
 	topic_name string
 
 	option int8 // PTP / PSB
 
+	groups []*Group
+
+	partitions map[string]*Partition
+	Files      map[string]*File
+
+	//需要修改，一个订阅需要多个config，因为一个partition有多个文件，一个文件需要一个config
+	//需要修改，分为多种订阅，每种订阅方式一种config
+	PTP_config *Config
+
+	//partition_name + consumer_name to config
+	PSB_configs map[string]*PSBConfig_PUSH
+
+	//一个consumer向文件描述符等的映射，每次pull将使用上次的文件描述符等资源
+	//topic+partition+consumer to Node
+	nodes map[string]*Node
+}
+
+func NewSubScription(in info, name string, parts map[string]*Partition, files map[string]*File) *SubScription {
+	sub := &SubScription{
+		mu:          sync.RWMutex{},
+		name:        name,
+		topic_name:  in.topicName,
+		partitions:  parts,
+		Files:       files,
+		PTP_config:  nil,
+		PSB_configs: make(map[string]*PSBConfig_PUSH),
+		nodes:       make(map[string]*Node),
+	}
+
+	group := NewGroup(in.partName, in.consumer)
+	sub.groups = append(sub.groups, group)
+	return sub
+}
+
+func (s *SubScription) ShutdownConsumerInGroup(cliName string) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	switch s.option {
+	case TOPIC_NIL_PTP_PUSH: //point to point just one group
+		s.groups[0].DownClient(cliName)
+	case TOPIC_KEY_PSB_PUSH:
+		for _, group := range s.groups {
+			group.DownClient(cliName)
+		}
+	}
+
+	return s.topic_name
+}
+
+type Config struct {
+	mu       sync.RWMutex
+	part_num int //partition数
+	con_num  int //consumer数
+
+	part_close chan *Part
+
+	PartToCon map[string][]string
+
+	Partitions map[string]*Partition
+	Files      map[string]*File
+	Clis       map[string]*client_operations.Client
+
+	parts map[string]*Part //partitionName to Part
+
+	consistent *Consistent
+}
+
+type Consistent struct {
+	//排序的hash虚拟节点(环形)
+	hashSortedNodes []uint32
+	//虚拟节点(consumer)对应的实际节点
+	circle map[uint32]string
+	//已绑定的consumer为true
+	nodes map[string]bool
+
+	//consumer以负责一个Partition为true
+	ConH     map[string]bool
+	FreeNode int
+
+	mu sync.RWMutex
+	//虚拟节点个数
+	virtualNodeCount int
+}
+
+type PSBConfig_PUSH struct {
+	mu sync.RWMutex
+
+	part_close chan *Part
+	file       *File
+
+	Cli  *client_operations.Client
+	part *Part //
 }

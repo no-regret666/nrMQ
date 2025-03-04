@@ -62,6 +62,9 @@ type ApplyMsg struct {
 
 // A Go object implementing a single Raft peer.
 type Raft struct {
+	topicName string
+	partName  string
+
 	mu        sync.RWMutex              // Lock to protect shared access to this peer's state
 	peers     []*raft_operations.Client // RPC end points of all peers
 	persister *Persister                // Object to hold this peer's persisted state
@@ -830,11 +833,13 @@ func (rf *Raft) applyCommited() {
 // Make() must return quickly, so it should start goroutines
 // for any long-running work.
 func Make(peers []*raft_operations.Client, me int,
-	persister *Persister, applyCh chan ApplyMsg) *Raft {
+	persister *Persister, applyCh chan ApplyMsg, topicName, partName string) *Raft {
 	rf := &Raft{}
 	rf.peers = peers
 	rf.persister = persister
 	rf.me = me
+	rf.topicName = topicName
+	rf.partName = partName
 
 	// Your initialization code here (3A, 3B, 3C).
 	rf.state = "Follower"

@@ -6,6 +6,7 @@ import (
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/server"
 	"nrMQ/kitex_gen/api"
+	"nrMQ/kitex_gen/api/client_operations"
 	"nrMQ/kitex_gen/api/raft_operations"
 	"nrMQ/kitex_gen/api/server_operations"
 	"nrMQ/kitex_gen/api/zkserver_operations"
@@ -102,6 +103,9 @@ func (s *Server) Make(opt Options, opt_cli []server.Option) {
 	s.me = opt.Me
 
 	//本地创建parts-raft，为raft同步做准备
+	s.parts_rafts = NewParts_Raft()
+	go s.parts_rafts.Make(opt.Name,opt_cli,s.aplych,,s.me)
+	s.parts_rafts.StartServer()
 
 	//在zookeeper上创建一个永久节点，若存在则不需要创建
 	err := s.zk.RegisterNode(zookeeper.BrokerNode{
@@ -187,6 +191,38 @@ func (s *Server) PushHandle(in info) (ret string, err error) {
 	}
 
 	return ret, err
+}
+
+func (s *Server) InfoHandle(ipport string) error {
+	logger.DEBUG(logger.DLog,"get consumer's ip_port %v\n", ipport)
+	client,err := client_operations.NewClient("client",client.WithHostPorts(ipport))
+	if err == nil {
+		logger.DEBUG(logger.DLog,"connect consumer server successful\n")
+		s.mu.Lock()
+		consumer,ok := s.consumers[ipport]
+		if !ok {
+			consumer = NewClient(ipport,client)
+			s.consumers[ipport] = consumer
+		}
+		go s.CheckConsumer(consumer)
+		s.mu.Unlock()
+		logger.DEBUG(logger.DLog,"return resp to consumer\n")
+		return nil
+	}
+
+	logger.DEBUG(logger.DError,"connect client failed\n")
+	return err
+}
+
+func (s *Server) CheckConsumer(client *Client) {
+	shutdouwn := client.CheckConsumer()
+	if shutdouwn { //该consumer已关闭，平衡subscription
+		client.mu.Lock()
+		for _,subscription := range client.subList {
+			subscription.ShutdownConsumerInGroup(client.name)
+		}
+		client.mu.Unlock()
+	}
 }
 
 // PullHandle

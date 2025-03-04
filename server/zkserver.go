@@ -154,7 +154,48 @@ func (z *ZKServer) HandleBroInfo(bro_name, bro_H_P string) error {
 
 func (z *ZKServer) SubHandle(info Info_in) error {
 	//在zookeeper上创建sub节点，若节点已经存在，则加入group中
+	path := fmt.Sprintf(zookeeper.PNodePath, z.zk.TopicRoot, info.topicName, info.partName)
+	_, err := z.zk.GetPartitionNode(path)
+	if err != nil {
+		logger.DEBUG(logger.DError, "the topic-partition(%v-%v) does not exist\n", info.topicName, info.partName)
+		return errors.New("the topic-partition does not exist")
+	}
+	err = z.zk.RegisterNode(zookeeper.SubscriptionNode{
+		Name:      info.cliName,
+		TopicName: info.topicName,
+		PartName:  info.partName,
+		Subtype:   info.option,
+	})
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+// consumer查询该向哪些broker发送请求
+// zkserver让broker准备好topic/sub和config
+func (z *ZKServer) HandStartGetBroker(info Info_in) (rets []byte, size int, err error) {
+	var Parts []zookeeper.Part
+
+	//检查该用户是否订阅了该topic/partition
+	z.zk.CheckSub(zookeeper.StartGetInfo{
+		CliName:       info.cliName,
+		TopicName:     info.topicName,
+		PartitionName: info.partName,
+		Option:        info.option,
+	})
+
+	//获取该topic或partition的broker，并保证在线，若全部离线则Err
+	if info.option == TOPIC_NIL_PTP_PULL || info.option == TOPIC_NIL_PTP_PUSH { //ptp_push
+		Parts, err = z.zk.GetBrokers(info.topicName)
+	} else if info.option == TOPIC_KEY_PSB_PULL || info.option == TOPIC_KEY_PSB_PUSH { //psb_push
+		Parts, err = z.zk.GetBroker(info.topicName, info.partName, info.index)
+	}
+	if err != nil {
+		return nil, 0, err
+	}
+	logger.DEBUG(logger.DLog, "the brokers is %v", Parts)
+
 }
 
 type ConsistentBro struct {

@@ -348,6 +348,46 @@ func (p *parts_raft) StartServer() {
 	}()
 }
 
+// 检查或创建一个raft
+// 添加一个需要raft同步的partition
+func (p *parts_raft) AddPart_Raft(peers []*raft_operations.Client, me int, topicName, partName string) {
+	//启动一个raft，即调用Make()，需要提供各节点broker的raft_clients，和该partition的通道
+	str := topicName + partName
+	p.mu.Lock()
+	_, ok := p.Partitions[str]
+	if !ok {
+		per := &raft.Persister{}
+		part_raft := raft.Make(peers, me, per, p.applyCh, topicName, partName)
+		p.Partitions[str] = part_raft
+	}
+	p.mu.Unlock()
+}
+
+func (p *parts_raft) CheckPartState(topicName, partName string) bool {
+	str := topicName + partName
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	_, ok := p.Partitions[str]
+	return ok
+}
+
+func (p *parts_raft) DeletePart_raft(topicName, partName string) error {
+	str := topicName + partName
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	raft, ok := p.Partitions[str]
+	if !ok {
+		logger.DEBUG_RAFT(logger.DError, "this topic-partition(%v) is not in this broker\n", str)
+		return errors.New("this topic-partition is not in this broker")
+	} else {
+		raft.Kill()
+		delete(p.Partitions, str)
+		return nil
+	}
+}
+
 func (p *parts_raft) RequestVote(ctx context.Context, args *api.RequestVoteArgs_) (r *api.RequestVoteReply, err error) {
 	str := args.TopicName + args.PartName
 	p.mu.RLock()
@@ -425,5 +465,11 @@ func (p *parts_raft) InstallSnapshot(ctx context.Context, args *api.InstallSnaps
 	return &api.InstallSnapshotReply{
 		Term:    int8(resp.Term),
 		Success: resp.Success,
+	}, nil
+}
+
+func (p *parts_raft) PingpongTest(ctx context.Context, req *api.PingPongRequest) (r *api.PingPongResponse, err error) {
+	return &api.PingPongResponse{
+		Pong: true,
 	}, nil
 }
