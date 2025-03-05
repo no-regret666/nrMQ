@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/cloudwego/kitex/client"
 	"hash/crc32"
+	"nrMQ/client/clients"
 	"nrMQ/kitex_gen/api"
 	"nrMQ/kitex_gen/api/server_operations"
 	"nrMQ/logger"
@@ -86,8 +87,12 @@ func (z *ZKServer) CreatePart(info Info_in) Info_out {
 // producer get broker
 func (z *ZKServer) ProGetLeader(info Info_in) Info_out {
 	//查询zookeeper,获得leaderBroker的host_port，若未连接则建立连接
-	path := fmt.Sprintf(zookeeper.PNodePath, z.zk.TopicRoot, info.topicName, info.partName)
-	leader, replicas, err := z.zk.GetLeader(path)
+	broker, block, err := z.zk.GetPartNowBrokerNode(info.topicName, info.partName)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return Info_out{Err: err}
+	}
+	PartitionNode, err := z.zk.GetPartState(info.topicName, info.partName)
 	if err != nil {
 		logger.DEBUG(logger.DError, "%v\n", err.Error())
 		return Info_out{Err: err}
@@ -96,7 +101,8 @@ func (z *ZKServer) ProGetLeader(info Info_in) Info_out {
 	//检查该Partition的状态是否设定
 	//检查该Partition在Brokers上是否创建raft集群或fetch
 	Brokers := make(map[string]string)
-	broker, ok := z.Brokers[leader.Name]
+	var ret string
+	replicas := z.zk.GetReplicaNodes(block.TopicName, block.PartName, block.Name)
 	for _, replica := range replicas {
 		BrokerNode, err := z.zk.GetBrokerNode(replica.BrokerName)
 		if err != nil {
@@ -104,7 +110,6 @@ func (z *ZKServer) ProGetLeader(info Info_in) Info_out {
 		}
 		Brokers[replica.BrokerName] = BrokerNode.BrokHostPort
 	}
-	replica := replicas[0]
 
 	data, err := json.Marshal(Brokers)
 	if err != nil {
@@ -118,24 +123,49 @@ func (z *ZKServer) ProGetLeader(info Info_in) Info_out {
 
 		//未连接该broker
 		if !ok {
-			bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(leader.BrokHostPort))
+			bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(BrokerHostPort))
 			if err != nil {
 				logger.DEBUG(logger.DError, "%v\n", err.Error())
 			}
 			z.mu.Lock()
-			z.Brokers[leader.Name] = bro_cli
+			z.Brokers[broker.Name] = bro_cli
 			z.mu.Unlock()
 		}
 
 		// 通知broker检查topic/partition，并创建队列准备接收信息
-		resp, err := broker.PrepareAccept(context.Background(), &api.PrepareAcceptRequest{
-			TopicName: info.topicName,
-			PartName:  info.partName,
-			FileName:  replica.FileName,
+		resp, err := bro_cli.PrepareAccept(context.Background(), &api.PrepareAcceptRequest{
+			TopicName: block.TopicName,
+			PartName:  block.PartName,
+			FileName:  block.FileName,
 		})
 		if err != nil || !resp.Ret {
 			logger.DEBUG(logger.DError, "%v\n", err.Error())
 		}
+
+		//检查该Partition的状态是否恒定
+		//检查该Partition在brokers上是否创建raft集群或fetch
+		//若该Partition没有设置状态则返回通知producer
+		if PartitionNode.Option == -2 { //未设置状态
+			ret = "Partition State is -2"
+		} else {
+			resp, err := bro_cli.PrepareState(context.Background(), &api.PrepareStateRequest{
+				TopicName: block.TopicName,
+				PartName:  block.PartName,
+				State:     PartitionNode.Option,
+				Brokers:   data,
+			})
+			if err != nil || !resp.Ret {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+			}
+		}
+	}
+
+	//返回producer broker和host_port
+	return Info_out{
+		Err:         err,
+		brokerName:  broker.Name,
+		broHostPort: broker.BrokHostPort,
+		Ret:         ret,
 	}
 }
 
@@ -194,8 +224,77 @@ func (z *ZKServer) HandStartGetBroker(info Info_in) (rets []byte, size int, err 
 	if err != nil {
 		return nil, 0, err
 	}
-	logger.DEBUG(logger.DLog, "the brokers is %v", Parts)
+	logger.DEBUG(logger.DLog, "the brokers are %v", Parts)
 
+	//获取到信息后将通知brokers，让他们检查是否有该topic/partition/subscription/config等
+	//并开启part发送协程，若协程在超时时间到后未收到管道的信息，则关闭协程
+	partkeys := z.SendPreoare(Parts, info)
+
+	parts := clients.Parts{
+		PartKeys: partkeys,
+	}
+	data, err := json.Marshal(parts)
+
+	var nodes clients.Parts
+
+	json.Unmarshal(data, &nodes)
+
+	logger.DEBUG(logger.DLog, "the partkeys %v and nodes %v\n", partkeys, nodes)
+	if err != nil {
+		logger.DEBUG(logger.DError, "turn partkeys to json failed\n", err.Error())
+	}
+
+	return data, size, nil
+}
+
+func (z *ZKServer) SendPreoare(Parts []zookeeper.Part, info Info_in) (partkeys []clients.PartKey) {
+	for _, part := range Parts {
+		if part.Err != OK {
+			logger.DEBUG(logger.DLog, "the part.ERR(%v) != OK the part is %v\n", part.Err, part)
+			partkeys = append(partkeys, clients.PartKey{
+				Err: part.Err,
+			})
+			continue
+		}
+		z.mu.RLock()
+		bro_cli, ok := z.Brokers[part.BrokerName]
+		z.mu.RUnlock()
+
+		if !ok {
+			bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(part.BrokHost_Port))
+			if err != nil {
+				logger.DEBUG(logger.DError, "broker(%v) host_port(%v) can't connect %v", part.BrokerName, part.BrokHost_Port, err.Error())
+			}
+			z.mu.Lock()
+			z.Brokers[part.BrokerName] = bro_cli
+			z.mu.Unlock()
+		}
+		rep := &api.PrepareSendRequest{
+			Consumer:  info.cliName,
+			TopicName: info.topicName,
+			PartName:  info.partName,
+			FileName:  part.Filename,
+			Option:    info.option,
+		}
+		if rep.Option == TOPIC_NIL_PTP_PULL || rep.Option == TOPIC_NIL_PTP_PUSH { //ptp
+			rep.Offset = part.PTP_index
+		} else if rep.Option == TOPIC_KEY_PSB_PULL || rep.Option == TOPIC_KEY_PSB_PUSH { //psb
+			rep.Offset = info.index
+		}
+		resp, err := bro_cli.PrepareSend(context.Background(), rep)
+		if err != nil || !resp.Ret {
+			logger.DEBUG(logger.DError, "PrepareSend error %v", err.Error())
+		}
+		logger.DEBUG(logger.DLog, "the part is %v", part)
+		partkeys = append(partkeys, clients.PartKey{
+			Name:       part.PartName,
+			BrokerName: part.BrokerName,
+			Broker_H_P: part.BrokHost_Port,
+			Offset:     part.PTP_index,
+			Err:        part.Err,
+		})
+	}
+	return partkeys
 }
 
 type ConsistentBro struct {

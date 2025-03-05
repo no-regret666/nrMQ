@@ -6,6 +6,7 @@ import (
 	"errors"
 	"nrMQ/kitex_gen/api"
 	"nrMQ/kitex_gen/api/client_operations"
+	"nrMQ/kitex_gen/api/zkserver_operations"
 	"nrMQ/logger"
 	"os"
 	"sync"
@@ -120,6 +121,46 @@ func (t *Topic) addMessage(in info) error {
 	part.AddMessage(in)
 
 	return nil
+}
+
+func (t *Topic) PrepareSendHandle(in info, zkclient *zkserver_operations.Client) (ret string, err error) {
+	sub_name := GetStringfromSub(in.topicName, in.partName, in.option)
+
+	t.mu.Lock()
+	//检查或创建partition
+	partition, ok := t.Parts[in.partName]
+	if !ok {
+		partition = NewPartition(t.Broker, t.Name, in.partName)
+		t.Parts[in.partName] = partition
+	}
+
+	//检查文件是否存在，若存在为获得File则创建File，若没有则返回错误
+	str, _ := os.Getwd()
+	str += "/" + t.Broker + "/" + in.topicName + "/" + in.partName + "/" + in.fileName
+	file, ok := t.Files[str]
+	if !ok {
+		file_ptr, fd, Err, err := CheckFile(str)
+		if err != nil {
+			return Err, err
+		}
+		fd.Close()
+		file = file_ptr
+		t.Files[str] = file
+	}
+
+	//检查或创建sub
+	sub, ok := t.subList[sub_name]
+	if !ok {
+		logger.DEBUG(logger.DLog, "%v create a new sub(%v)\n", t.Broker, sub_name)
+		sub = NewSubScription(in, sub_name, t.Parts, t.Files)
+		t.subList[sub_name] = sub
+	}
+	t.mu.Unlock()
+
+	//在sub中创建对应文件的config，来等待startget
+	if in.option == TOPIC_NIL_PTP_PUSH {
+
+	}
 }
 
 const (

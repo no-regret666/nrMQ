@@ -225,6 +225,25 @@ func (s *Server) CheckConsumer(client *Client) {
 	}
 }
 
+// PrepareSendHandle 准备发送消息
+//检查topic和subscription是否存在，不存在则需要创建
+//检查该文件的config是否存在，不存在则创建，并开启线程
+//协程设置超时时间，时间到则关闭
+func (s *Server) PrepareSendHandle(in info) (ret string, err error) {
+	//检查或创建topic
+	s.mu.Lock()
+	topic,ok := s.topics[in.topicName]
+	if !ok {
+		logger.DEBUG(logger.DLog,"%v not have topic(%v),create topic\n",s.Name, in.topicName)
+		topic = NewTopic(s.Name, in.topicName)
+		s.topics[in.topicName] = topic
+	}
+	s.mu.Unlock()
+
+	//检查或创建partition
+	return topic.PrepareSendHandle(in,&s.zkclient)
+}
+
 // PullHandle
 // Pull message
 func (s *Server) PullHandle(in info) (MSGS, error) {

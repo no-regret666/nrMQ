@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"io"
 	"nrMQ/logger"
 	"os"
@@ -38,6 +39,32 @@ func NewFile(path_name string) (file *File, fd *os.File, Err string, err error) 
 		filename:  path_name,
 		node_size: NODE_SIZE,
 	}
+	return file, fd, "ok", err
+}
+
+func CheckFile(path string) (file *File, fd *os.File, Err string, err error) {
+	if !CheckFileOrList(path) {
+		Err = "NotFile"
+		err = errors.New(Err)
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return nil, nil, Err, err
+	} else {
+		fd, err = os.OpenFile(path, os.O_RDONLY, 0666)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+			Err = "Open file failed"
+			return nil, nil, Err, err
+		}
+	}
+
+	file = &File{
+		mu:        sync.RWMutex{},
+		filename:  path,
+		node_size: NODE_SIZE,
+	}
+
+	logger.DEBUG(logger.DLog, "the file is %v\n", file)
+
 	return file, fd, "ok", err
 }
 
