@@ -103,3 +103,8 @@ func CreateList(path string) error {
 func CreateFile(path string) (file *os.File, err error) {
 	return os.Create(path)
 }
+
+func GetBlockName(fileName string) (ret string) {
+	ret = fileName[:len(fileName)-4]
+	return ret
+}

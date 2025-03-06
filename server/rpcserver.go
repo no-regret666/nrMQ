@@ -341,7 +341,7 @@ func (s *RPCServer) BroInfo(ctx context.Context, req *api.BroInfoRequest) (r *ap
 	}, nil
 }
 
-func (s *RPCServer) UpdateDup(ctx context.Context, req *api.UpdateDupRequest) (r *api.UpdateDupResponse, err error) {
+func (s *RPCServer) UpdateRep(ctx context.Context, req *api.UpdateRepRequest) (r *api.UpdateRepResponse, err error) {
 	//TODO implement me
 	panic("implement me")
 }

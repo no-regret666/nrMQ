@@ -4,6 +4,7 @@ import (
 	"context"
 	"nrMQ/kitex_gen/api"
 	"nrMQ/kitex_gen/api/client_operations"
+	"nrMQ/kitex_gen/api/zkserver_operations"
 	"os"
 	"sync"
 	"time"
@@ -54,6 +55,72 @@ func (c *Client) CheckConsumer() bool {
 	c.state = DOWN
 	c.mu.Unlock()
 	return true
+}
+
+type Part struct {
+	mu        sync.RWMutex
+	topicName string
+	partName  string
+	option    int8
+	clis      map[string]*client_operations.Client
+	zkclient  *zkserver_operations.Client
+
+	state string
+	fd    os.File
+	file  *File
+
+	index  int64 //use index to find offset
+	offset int64
+
+	start_index int64
+	end_index   int64
+
+	buffer_node map[int64]Key
+	buffer_msg  map[int64][]Message
+
+	part_had chan Done
+	buf_done map[int64]string
+}
+
+const (
+	OK    = "ok"
+	TIOUT = "timeout"
+	NOTDO = "notdo"
+	HAVE  = "havedo"
+	HADDO = "haddo"
+
+	BUFF_NUM  = 5
+	AGAIN_NUM = 3
+)
+
+type Done struct {
+	in   int64
+	err  string
+	name string
+	cli  *client_operations.Client
+}
+
+func NewPart(in info, file *File, zkclient *zkserver_operations.Client) *Part {
+	part := &Part{
+		mu:        sync.RWMutex{},
+		topicName: in.topicName,
+		partName:  in.partName,
+		option:    in.option,
+		zkclient:  zkclient,
+
+		buffer_node: make(map[int64]Key),
+		buffer_msg:  make(map[int64][]Message),
+		file:        file,
+		clis:        make(map[string]*client_operations.Client),
+		state:       DOWN,
+
+		part_had: make(chan Done),
+		buf_done: make(map[int64]string),
+	}
+
+	part.index = in.offset
+
+	return part
 }
 
 type MSGS struct {

@@ -8680,7 +8680,7 @@ func (p *BroInfoResponse) Field1DeepEqual(src bool) bool {
 	return true
 }
 
-type UpdateDupRequest struct {
+type UpdateRepRequest struct {
 	Topic      string `thrift:"topic,1" frugal:"1,default,string" json:"topic"`
 	Part       string `thrift:"part,2" frugal:"2,default,string" json:"part"`
 	BrokerName string `thrift:"BrokerName,3" frugal:"3,default,string" json:"BrokerName"`
@@ -8689,56 +8689,56 @@ type UpdateDupRequest struct {
 	Leader     bool   `thrift:"leader,6" frugal:"6,default,bool" json:"leader"`
 }
 
-func NewUpdateDupRequest() *UpdateDupRequest {
-	return &UpdateDupRequest{}
+func NewUpdateRepRequest() *UpdateRepRequest {
+	return &UpdateRepRequest{}
 }
 
-func (p *UpdateDupRequest) InitDefault() {
+func (p *UpdateRepRequest) InitDefault() {
 }
 
-func (p *UpdateDupRequest) GetTopic() (v string) {
+func (p *UpdateRepRequest) GetTopic() (v string) {
 	return p.Topic
 }
 
-func (p *UpdateDupRequest) GetPart() (v string) {
+func (p *UpdateRepRequest) GetPart() (v string) {
 	return p.Part
 }
 
-func (p *UpdateDupRequest) GetBrokerName() (v string) {
+func (p *UpdateRepRequest) GetBrokerName() (v string) {
 	return p.BrokerName
 }
 
-func (p *UpdateDupRequest) GetBlockName() (v string) {
+func (p *UpdateRepRequest) GetBlockName() (v string) {
 	return p.BlockName
 }
 
-func (p *UpdateDupRequest) GetEndIndex() (v int64) {
+func (p *UpdateRepRequest) GetEndIndex() (v int64) {
 	return p.EndIndex
 }
 
-func (p *UpdateDupRequest) GetLeader() (v bool) {
+func (p *UpdateRepRequest) GetLeader() (v bool) {
 	return p.Leader
 }
-func (p *UpdateDupRequest) SetTopic(val string) {
+func (p *UpdateRepRequest) SetTopic(val string) {
 	p.Topic = val
 }
-func (p *UpdateDupRequest) SetPart(val string) {
+func (p *UpdateRepRequest) SetPart(val string) {
 	p.Part = val
 }
-func (p *UpdateDupRequest) SetBrokerName(val string) {
+func (p *UpdateRepRequest) SetBrokerName(val string) {
 	p.BrokerName = val
 }
-func (p *UpdateDupRequest) SetBlockName(val string) {
+func (p *UpdateRepRequest) SetBlockName(val string) {
 	p.BlockName = val
 }
-func (p *UpdateDupRequest) SetEndIndex(val int64) {
+func (p *UpdateRepRequest) SetEndIndex(val int64) {
 	p.EndIndex = val
 }
-func (p *UpdateDupRequest) SetLeader(val bool) {
+func (p *UpdateRepRequest) SetLeader(val bool) {
 	p.Leader = val
 }
 
-var fieldIDToName_UpdateDupRequest = map[int16]string{
+var fieldIDToName_UpdateRepRequest = map[int16]string{
 	1: "topic",
 	2: "part",
 	3: "BrokerName",
@@ -8747,7 +8747,7 @@ var fieldIDToName_UpdateDupRequest = map[int16]string{
 	6: "leader",
 }
 
-func (p *UpdateDupRequest) Read(iprot thrift.TProtocol) (err error) {
+func (p *UpdateRepRequest) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -8833,7 +8833,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_UpdateDupRequest[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_UpdateRepRequest[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -8843,7 +8843,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *UpdateDupRequest) ReadField1(iprot thrift.TProtocol) error {
+func (p *UpdateRepRequest) ReadField1(iprot thrift.TProtocol) error {
 
 	var _field string
 	if v, err := iprot.ReadString(); err != nil {
@@ -8854,7 +8854,7 @@ func (p *UpdateDupRequest) ReadField1(iprot thrift.TProtocol) error {
 	p.Topic = _field
 	return nil
 }
-func (p *UpdateDupRequest) ReadField2(iprot thrift.TProtocol) error {
+func (p *UpdateRepRequest) ReadField2(iprot thrift.TProtocol) error {
 
 	var _field string
 	if v, err := iprot.ReadString(); err != nil {
@@ -8865,7 +8865,7 @@ func (p *UpdateDupRequest) ReadField2(iprot thrift.TProtocol) error {
 	p.Part = _field
 	return nil
 }
-func (p *UpdateDupRequest) ReadField3(iprot thrift.TProtocol) error {
+func (p *UpdateRepRequest) ReadField3(iprot thrift.TProtocol) error {
 
 	var _field string
 	if v, err := iprot.ReadString(); err != nil {
@@ -8876,7 +8876,7 @@ func (p *UpdateDupRequest) ReadField3(iprot thrift.TProtocol) error {
 	p.BrokerName = _field
 	return nil
 }
-func (p *UpdateDupRequest) ReadField4(iprot thrift.TProtocol) error {
+func (p *UpdateRepRequest) ReadField4(iprot thrift.TProtocol) error {
 
 	var _field string
 	if v, err := iprot.ReadString(); err != nil {
@@ -8887,7 +8887,7 @@ func (p *UpdateDupRequest) ReadField4(iprot thrift.TProtocol) error {
 	p.BlockName = _field
 	return nil
 }
-func (p *UpdateDupRequest) ReadField5(iprot thrift.TProtocol) error {
+func (p *UpdateRepRequest) ReadField5(iprot thrift.TProtocol) error {
 
 	var _field int64
 	if v, err := iprot.ReadI64(); err != nil {
@@ -8898,7 +8898,7 @@ func (p *UpdateDupRequest) ReadField5(iprot thrift.TProtocol) error {
 	p.EndIndex = _field
 	return nil
 }
-func (p *UpdateDupRequest) ReadField6(iprot thrift.TProtocol) error {
+func (p *UpdateRepRequest) ReadField6(iprot thrift.TProtocol) error {
 
 	var _field bool
 	if v, err := iprot.ReadBool(); err != nil {
@@ -8910,10 +8910,10 @@ func (p *UpdateDupRequest) ReadField6(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *UpdateDupRequest) Write(oprot thrift.TProtocol) (err error) {
+func (p *UpdateRepRequest) Write(oprot thrift.TProtocol) (err error) {
 
 	var fieldId int16
-	if err = oprot.WriteStructBegin("UpdateDupRequest"); err != nil {
+	if err = oprot.WriteStructBegin("UpdateRepRequest"); err != nil {
 		goto WriteStructBeginError
 	}
 	if p != nil {
@@ -8959,7 +8959,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *UpdateDupRequest) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *UpdateRepRequest) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("topic", thrift.STRING, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -8976,7 +8976,7 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *UpdateDupRequest) writeField2(oprot thrift.TProtocol) (err error) {
+func (p *UpdateRepRequest) writeField2(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("part", thrift.STRING, 2); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -8993,7 +8993,7 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 2 end error: ", p), err)
 }
 
-func (p *UpdateDupRequest) writeField3(oprot thrift.TProtocol) (err error) {
+func (p *UpdateRepRequest) writeField3(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("BrokerName", thrift.STRING, 3); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -9010,7 +9010,7 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 3 end error: ", p), err)
 }
 
-func (p *UpdateDupRequest) writeField4(oprot thrift.TProtocol) (err error) {
+func (p *UpdateRepRequest) writeField4(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("BlockName", thrift.STRING, 4); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -9027,7 +9027,7 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 4 end error: ", p), err)
 }
 
-func (p *UpdateDupRequest) writeField5(oprot thrift.TProtocol) (err error) {
+func (p *UpdateRepRequest) writeField5(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("EndIndex", thrift.I64, 5); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -9044,7 +9044,7 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 5 end error: ", p), err)
 }
 
-func (p *UpdateDupRequest) writeField6(oprot thrift.TProtocol) (err error) {
+func (p *UpdateRepRequest) writeField6(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("leader", thrift.BOOL, 6); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -9061,15 +9061,15 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 6 end error: ", p), err)
 }
 
-func (p *UpdateDupRequest) String() string {
+func (p *UpdateRepRequest) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("UpdateDupRequest(%+v)", *p)
+	return fmt.Sprintf("UpdateRepRequest(%+v)", *p)
 
 }
 
-func (p *UpdateDupRequest) DeepEqual(ano *UpdateDupRequest) bool {
+func (p *UpdateRepRequest) DeepEqual(ano *UpdateRepRequest) bool {
 	if p == ano {
 		return true
 	} else if p == nil || ano == nil {
@@ -9096,42 +9096,42 @@ func (p *UpdateDupRequest) DeepEqual(ano *UpdateDupRequest) bool {
 	return true
 }
 
-func (p *UpdateDupRequest) Field1DeepEqual(src string) bool {
+func (p *UpdateRepRequest) Field1DeepEqual(src string) bool {
 
 	if strings.Compare(p.Topic, src) != 0 {
 		return false
 	}
 	return true
 }
-func (p *UpdateDupRequest) Field2DeepEqual(src string) bool {
+func (p *UpdateRepRequest) Field2DeepEqual(src string) bool {
 
 	if strings.Compare(p.Part, src) != 0 {
 		return false
 	}
 	return true
 }
-func (p *UpdateDupRequest) Field3DeepEqual(src string) bool {
+func (p *UpdateRepRequest) Field3DeepEqual(src string) bool {
 
 	if strings.Compare(p.BrokerName, src) != 0 {
 		return false
 	}
 	return true
 }
-func (p *UpdateDupRequest) Field4DeepEqual(src string) bool {
+func (p *UpdateRepRequest) Field4DeepEqual(src string) bool {
 
 	if strings.Compare(p.BlockName, src) != 0 {
 		return false
 	}
 	return true
 }
-func (p *UpdateDupRequest) Field5DeepEqual(src int64) bool {
+func (p *UpdateRepRequest) Field5DeepEqual(src int64) bool {
 
 	if p.EndIndex != src {
 		return false
 	}
 	return true
 }
-func (p *UpdateDupRequest) Field6DeepEqual(src bool) bool {
+func (p *UpdateRepRequest) Field6DeepEqual(src bool) bool {
 
 	if p.Leader != src {
 		return false
@@ -9139,29 +9139,29 @@ func (p *UpdateDupRequest) Field6DeepEqual(src bool) bool {
 	return true
 }
 
-type UpdateDupResponse struct {
+type UpdateRepResponse struct {
 	Ret bool `thrift:"ret,1" frugal:"1,default,bool" json:"ret"`
 }
 
-func NewUpdateDupResponse() *UpdateDupResponse {
-	return &UpdateDupResponse{}
+func NewUpdateRepResponse() *UpdateRepResponse {
+	return &UpdateRepResponse{}
 }
 
-func (p *UpdateDupResponse) InitDefault() {
+func (p *UpdateRepResponse) InitDefault() {
 }
 
-func (p *UpdateDupResponse) GetRet() (v bool) {
+func (p *UpdateRepResponse) GetRet() (v bool) {
 	return p.Ret
 }
-func (p *UpdateDupResponse) SetRet(val bool) {
+func (p *UpdateRepResponse) SetRet(val bool) {
 	p.Ret = val
 }
 
-var fieldIDToName_UpdateDupResponse = map[int16]string{
+var fieldIDToName_UpdateRepResponse = map[int16]string{
 	1: "ret",
 }
 
-func (p *UpdateDupResponse) Read(iprot thrift.TProtocol) (err error) {
+func (p *UpdateRepResponse) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -9207,7 +9207,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_UpdateDupResponse[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_UpdateRepResponse[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -9217,7 +9217,7 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *UpdateDupResponse) ReadField1(iprot thrift.TProtocol) error {
+func (p *UpdateRepResponse) ReadField1(iprot thrift.TProtocol) error {
 
 	var _field bool
 	if v, err := iprot.ReadBool(); err != nil {
@@ -9229,10 +9229,10 @@ func (p *UpdateDupResponse) ReadField1(iprot thrift.TProtocol) error {
 	return nil
 }
 
-func (p *UpdateDupResponse) Write(oprot thrift.TProtocol) (err error) {
+func (p *UpdateRepResponse) Write(oprot thrift.TProtocol) (err error) {
 
 	var fieldId int16
-	if err = oprot.WriteStructBegin("UpdateDupResponse"); err != nil {
+	if err = oprot.WriteStructBegin("UpdateRepResponse"); err != nil {
 		goto WriteStructBeginError
 	}
 	if p != nil {
@@ -9258,7 +9258,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *UpdateDupResponse) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *UpdateRepResponse) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("ret", thrift.BOOL, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -9275,15 +9275,15 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *UpdateDupResponse) String() string {
+func (p *UpdateRepResponse) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("UpdateDupResponse(%+v)", *p)
+	return fmt.Sprintf("UpdateRepResponse(%+v)", *p)
 
 }
 
-func (p *UpdateDupResponse) DeepEqual(ano *UpdateDupResponse) bool {
+func (p *UpdateRepResponse) DeepEqual(ano *UpdateRepResponse) bool {
 	if p == ano {
 		return true
 	} else if p == nil || ano == nil {
@@ -9295,7 +9295,7 @@ func (p *UpdateDupResponse) DeepEqual(ano *UpdateDupResponse) bool {
 	return true
 }
 
-func (p *UpdateDupResponse) Field1DeepEqual(src bool) bool {
+func (p *UpdateRepResponse) Field1DeepEqual(src bool) bool {
 
 	if p.Ret != src {
 		return false
@@ -10226,7 +10226,7 @@ type ZkServer_Operations interface {
 
 	BroInfo(ctx context.Context, req *BroInfoRequest) (r *BroInfoResponse, err error)
 
-	UpdateDup(ctx context.Context, req *UpdateDupRequest) (r *UpdateDupResponse, err error)
+	UpdateRep(ctx context.Context, req *UpdateRepRequest) (r *UpdateRepResponse, err error)
 }
 
 type Client_Operations interface {
@@ -15023,38 +15023,38 @@ func (p *ZkServer_OperationsBroInfoResult) Field0DeepEqual(src *BroInfoResponse)
 	return true
 }
 
-type ZkServer_OperationsUpdateDupArgs struct {
-	Req *UpdateDupRequest `thrift:"req,1" frugal:"1,default,UpdateDupRequest" json:"req"`
+type ZkServer_OperationsUpdateRepArgs struct {
+	Req *UpdateRepRequest `thrift:"req,1" frugal:"1,default,UpdateRepRequest" json:"req"`
 }
 
-func NewZkServer_OperationsUpdateDupArgs() *ZkServer_OperationsUpdateDupArgs {
-	return &ZkServer_OperationsUpdateDupArgs{}
+func NewZkServer_OperationsUpdateRepArgs() *ZkServer_OperationsUpdateRepArgs {
+	return &ZkServer_OperationsUpdateRepArgs{}
 }
 
-func (p *ZkServer_OperationsUpdateDupArgs) InitDefault() {
+func (p *ZkServer_OperationsUpdateRepArgs) InitDefault() {
 }
 
-var ZkServer_OperationsUpdateDupArgs_Req_DEFAULT *UpdateDupRequest
+var ZkServer_OperationsUpdateRepArgs_Req_DEFAULT *UpdateRepRequest
 
-func (p *ZkServer_OperationsUpdateDupArgs) GetReq() (v *UpdateDupRequest) {
+func (p *ZkServer_OperationsUpdateRepArgs) GetReq() (v *UpdateRepRequest) {
 	if !p.IsSetReq() {
-		return ZkServer_OperationsUpdateDupArgs_Req_DEFAULT
+		return ZkServer_OperationsUpdateRepArgs_Req_DEFAULT
 	}
 	return p.Req
 }
-func (p *ZkServer_OperationsUpdateDupArgs) SetReq(val *UpdateDupRequest) {
+func (p *ZkServer_OperationsUpdateRepArgs) SetReq(val *UpdateRepRequest) {
 	p.Req = val
 }
 
-var fieldIDToName_ZkServer_OperationsUpdateDupArgs = map[int16]string{
+var fieldIDToName_ZkServer_OperationsUpdateRepArgs = map[int16]string{
 	1: "req",
 }
 
-func (p *ZkServer_OperationsUpdateDupArgs) IsSetReq() bool {
+func (p *ZkServer_OperationsUpdateRepArgs) IsSetReq() bool {
 	return p.Req != nil
 }
 
-func (p *ZkServer_OperationsUpdateDupArgs) Read(iprot thrift.TProtocol) (err error) {
+func (p *ZkServer_OperationsUpdateRepArgs) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -15100,7 +15100,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsUpdateDupArgs[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsUpdateRepArgs[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -15110,8 +15110,8 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *ZkServer_OperationsUpdateDupArgs) ReadField1(iprot thrift.TProtocol) error {
-	_field := NewUpdateDupRequest()
+func (p *ZkServer_OperationsUpdateRepArgs) ReadField1(iprot thrift.TProtocol) error {
+	_field := NewUpdateRepRequest()
 	if err := _field.Read(iprot); err != nil {
 		return err
 	}
@@ -15119,10 +15119,10 @@ func (p *ZkServer_OperationsUpdateDupArgs) ReadField1(iprot thrift.TProtocol) er
 	return nil
 }
 
-func (p *ZkServer_OperationsUpdateDupArgs) Write(oprot thrift.TProtocol) (err error) {
+func (p *ZkServer_OperationsUpdateRepArgs) Write(oprot thrift.TProtocol) (err error) {
 
 	var fieldId int16
-	if err = oprot.WriteStructBegin("UpdateDup_args"); err != nil {
+	if err = oprot.WriteStructBegin("UpdateRep_args"); err != nil {
 		goto WriteStructBeginError
 	}
 	if p != nil {
@@ -15148,7 +15148,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *ZkServer_OperationsUpdateDupArgs) writeField1(oprot thrift.TProtocol) (err error) {
+func (p *ZkServer_OperationsUpdateRepArgs) writeField1(oprot thrift.TProtocol) (err error) {
 	if err = oprot.WriteFieldBegin("req", thrift.STRUCT, 1); err != nil {
 		goto WriteFieldBeginError
 	}
@@ -15165,15 +15165,15 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 1 end error: ", p), err)
 }
 
-func (p *ZkServer_OperationsUpdateDupArgs) String() string {
+func (p *ZkServer_OperationsUpdateRepArgs) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("ZkServer_OperationsUpdateDupArgs(%+v)", *p)
+	return fmt.Sprintf("ZkServer_OperationsUpdateRepArgs(%+v)", *p)
 
 }
 
-func (p *ZkServer_OperationsUpdateDupArgs) DeepEqual(ano *ZkServer_OperationsUpdateDupArgs) bool {
+func (p *ZkServer_OperationsUpdateRepArgs) DeepEqual(ano *ZkServer_OperationsUpdateRepArgs) bool {
 	if p == ano {
 		return true
 	} else if p == nil || ano == nil {
@@ -15185,7 +15185,7 @@ func (p *ZkServer_OperationsUpdateDupArgs) DeepEqual(ano *ZkServer_OperationsUpd
 	return true
 }
 
-func (p *ZkServer_OperationsUpdateDupArgs) Field1DeepEqual(src *UpdateDupRequest) bool {
+func (p *ZkServer_OperationsUpdateRepArgs) Field1DeepEqual(src *UpdateRepRequest) bool {
 
 	if !p.Req.DeepEqual(src) {
 		return false
@@ -15193,38 +15193,38 @@ func (p *ZkServer_OperationsUpdateDupArgs) Field1DeepEqual(src *UpdateDupRequest
 	return true
 }
 
-type ZkServer_OperationsUpdateDupResult struct {
-	Success *UpdateDupResponse `thrift:"success,0,optional" frugal:"0,optional,UpdateDupResponse" json:"success,omitempty"`
+type ZkServer_OperationsUpdateRepResult struct {
+	Success *UpdateRepResponse `thrift:"success,0,optional" frugal:"0,optional,UpdateRepResponse" json:"success,omitempty"`
 }
 
-func NewZkServer_OperationsUpdateDupResult() *ZkServer_OperationsUpdateDupResult {
-	return &ZkServer_OperationsUpdateDupResult{}
+func NewZkServer_OperationsUpdateRepResult() *ZkServer_OperationsUpdateRepResult {
+	return &ZkServer_OperationsUpdateRepResult{}
 }
 
-func (p *ZkServer_OperationsUpdateDupResult) InitDefault() {
+func (p *ZkServer_OperationsUpdateRepResult) InitDefault() {
 }
 
-var ZkServer_OperationsUpdateDupResult_Success_DEFAULT *UpdateDupResponse
+var ZkServer_OperationsUpdateRepResult_Success_DEFAULT *UpdateRepResponse
 
-func (p *ZkServer_OperationsUpdateDupResult) GetSuccess() (v *UpdateDupResponse) {
+func (p *ZkServer_OperationsUpdateRepResult) GetSuccess() (v *UpdateRepResponse) {
 	if !p.IsSetSuccess() {
-		return ZkServer_OperationsUpdateDupResult_Success_DEFAULT
+		return ZkServer_OperationsUpdateRepResult_Success_DEFAULT
 	}
 	return p.Success
 }
-func (p *ZkServer_OperationsUpdateDupResult) SetSuccess(x interface{}) {
-	p.Success = x.(*UpdateDupResponse)
+func (p *ZkServer_OperationsUpdateRepResult) SetSuccess(x interface{}) {
+	p.Success = x.(*UpdateRepResponse)
 }
 
-var fieldIDToName_ZkServer_OperationsUpdateDupResult = map[int16]string{
+var fieldIDToName_ZkServer_OperationsUpdateRepResult = map[int16]string{
 	0: "success",
 }
 
-func (p *ZkServer_OperationsUpdateDupResult) IsSetSuccess() bool {
+func (p *ZkServer_OperationsUpdateRepResult) IsSetSuccess() bool {
 	return p.Success != nil
 }
 
-func (p *ZkServer_OperationsUpdateDupResult) Read(iprot thrift.TProtocol) (err error) {
+func (p *ZkServer_OperationsUpdateRepResult) Read(iprot thrift.TProtocol) (err error) {
 
 	var fieldTypeId thrift.TType
 	var fieldId int16
@@ -15270,7 +15270,7 @@ ReadStructBeginError:
 ReadFieldBeginError:
 	return thrift.PrependError(fmt.Sprintf("%T read field %d begin error: ", p, fieldId), err)
 ReadFieldError:
-	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsUpdateDupResult[fieldId]), err)
+	return thrift.PrependError(fmt.Sprintf("%T read field %d '%s' error: ", p, fieldId, fieldIDToName_ZkServer_OperationsUpdateRepResult[fieldId]), err)
 SkipFieldError:
 	return thrift.PrependError(fmt.Sprintf("%T field %d skip type %d error: ", p, fieldId, fieldTypeId), err)
 
@@ -15280,8 +15280,8 @@ ReadStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T read struct end error: ", p), err)
 }
 
-func (p *ZkServer_OperationsUpdateDupResult) ReadField0(iprot thrift.TProtocol) error {
-	_field := NewUpdateDupResponse()
+func (p *ZkServer_OperationsUpdateRepResult) ReadField0(iprot thrift.TProtocol) error {
+	_field := NewUpdateRepResponse()
 	if err := _field.Read(iprot); err != nil {
 		return err
 	}
@@ -15289,10 +15289,10 @@ func (p *ZkServer_OperationsUpdateDupResult) ReadField0(iprot thrift.TProtocol) 
 	return nil
 }
 
-func (p *ZkServer_OperationsUpdateDupResult) Write(oprot thrift.TProtocol) (err error) {
+func (p *ZkServer_OperationsUpdateRepResult) Write(oprot thrift.TProtocol) (err error) {
 
 	var fieldId int16
-	if err = oprot.WriteStructBegin("UpdateDup_result"); err != nil {
+	if err = oprot.WriteStructBegin("UpdateRep_result"); err != nil {
 		goto WriteStructBeginError
 	}
 	if p != nil {
@@ -15318,7 +15318,7 @@ WriteStructEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write struct end error: ", p), err)
 }
 
-func (p *ZkServer_OperationsUpdateDupResult) writeField0(oprot thrift.TProtocol) (err error) {
+func (p *ZkServer_OperationsUpdateRepResult) writeField0(oprot thrift.TProtocol) (err error) {
 	if p.IsSetSuccess() {
 		if err = oprot.WriteFieldBegin("success", thrift.STRUCT, 0); err != nil {
 			goto WriteFieldBeginError
@@ -15337,15 +15337,15 @@ WriteFieldEndError:
 	return thrift.PrependError(fmt.Sprintf("%T write field 0 end error: ", p), err)
 }
 
-func (p *ZkServer_OperationsUpdateDupResult) String() string {
+func (p *ZkServer_OperationsUpdateRepResult) String() string {
 	if p == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("ZkServer_OperationsUpdateDupResult(%+v)", *p)
+	return fmt.Sprintf("ZkServer_OperationsUpdateRepResult(%+v)", *p)
 
 }
 
-func (p *ZkServer_OperationsUpdateDupResult) DeepEqual(ano *ZkServer_OperationsUpdateDupResult) bool {
+func (p *ZkServer_OperationsUpdateRepResult) DeepEqual(ano *ZkServer_OperationsUpdateRepResult) bool {
 	if p == ano {
 		return true
 	} else if p == nil || ano == nil {
@@ -15357,7 +15357,7 @@ func (p *ZkServer_OperationsUpdateDupResult) DeepEqual(ano *ZkServer_OperationsU
 	return true
 }
 
-func (p *ZkServer_OperationsUpdateDupResult) Field0DeepEqual(src *UpdateDupResponse) bool {
+func (p *ZkServer_OperationsUpdateRepResult) Field0DeepEqual(src *UpdateRepResponse) bool {
 
 	if !p.Success.DeepEqual(src) {
 		return false

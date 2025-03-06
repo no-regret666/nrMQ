@@ -55,10 +55,10 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
-	"UpdateDup": kitex.NewMethodInfo(
-		updateDupHandler,
-		newZkServer_OperationsUpdateDupArgs,
-		newZkServer_OperationsUpdateDupResult,
+	"UpdateRep": kitex.NewMethodInfo(
+		updateRepHandler,
+		newZkServer_OperationsUpdateRepArgs,
+		newZkServer_OperationsUpdateRepResult,
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
@@ -236,22 +236,22 @@ func newZkServer_OperationsBroInfoResult() interface{} {
 	return api.NewZkServer_OperationsBroInfoResult()
 }
 
-func updateDupHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	realArg := arg.(*api.ZkServer_OperationsUpdateDupArgs)
-	realResult := result.(*api.ZkServer_OperationsUpdateDupResult)
-	success, err := handler.(api.ZkServer_Operations).UpdateDup(ctx, realArg.Req)
+func updateRepHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.ZkServer_OperationsUpdateRepArgs)
+	realResult := result.(*api.ZkServer_OperationsUpdateRepResult)
+	success, err := handler.(api.ZkServer_Operations).UpdateRep(ctx, realArg.Req)
 	if err != nil {
 		return err
 	}
 	realResult.Success = success
 	return nil
 }
-func newZkServer_OperationsUpdateDupArgs() interface{} {
-	return api.NewZkServer_OperationsUpdateDupArgs()
+func newZkServer_OperationsUpdateRepArgs() interface{} {
+	return api.NewZkServer_OperationsUpdateRepArgs()
 }
 
-func newZkServer_OperationsUpdateDupResult() interface{} {
-	return api.NewZkServer_OperationsUpdateDupResult()
+func newZkServer_OperationsUpdateRepResult() interface{} {
+	return api.NewZkServer_OperationsUpdateRepResult()
 }
 
 type kClient struct {
@@ -324,11 +324,11 @@ func (p *kClient) BroInfo(ctx context.Context, req *api.BroInfoRequest) (r *api.
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) UpdateDup(ctx context.Context, req *api.UpdateDupRequest) (r *api.UpdateDupResponse, err error) {
-	var _args api.ZkServer_OperationsUpdateDupArgs
+func (p *kClient) UpdateRep(ctx context.Context, req *api.UpdateRepRequest) (r *api.UpdateRepResponse, err error) {
+	var _args api.ZkServer_OperationsUpdateRepArgs
 	_args.Req = req
-	var _result api.ZkServer_OperationsUpdateDupResult
-	if err = p.c.Call(ctx, "UpdateDup", &_args, &_result); err != nil {
+	var _result api.ZkServer_OperationsUpdateRepResult
+	if err = p.c.Call(ctx, "UpdateRep", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

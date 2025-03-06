@@ -159,8 +159,29 @@ func (t *Topic) PrepareSendHandle(in info, zkclient *zkserver_operations.Client)
 
 	//在sub中创建对应文件的config，来等待startget
 	if in.option == TOPIC_NIL_PTP_PUSH {
-
+		ret, err = sub.AddPTPConfig(in, partition, file, zkclient)
+	} else if in.option == TOPIC_KEY_PSB_PUSH {
+		sub.AddPSBConfig(in, in.partName, file, zkclient)
+	} else if in.option == TOPIC_NIL_PTP_PULL || in.option == TOPIC_KEY_PSB_PULL {
+		//在sub中创建一个Node用来保存该consumer的Pull的文件描述符等信息
+		logger.DEBUG(logger.DLog, "the file is %v\n", file)
+		sub.AddNode(in, file)
 	}
+
+	return ret, err
+}
+
+// topic + "nil" + "ptp" (point to point consumer : partition为 1 : n)
+// topic + key + "psb" (pub and sub consumer : partition 为 n : 1)
+// topic + "nil" + "psb" (pub and sub consumer : partition 为 n : n)
+func GetStringfromSub(topicName, partName string, option int8) string {
+	ret := topicName
+	if option == TOPIC_NIL_PTP_PUSH || option == TOPIC_NIL_PTP_PULL { //point to point
+		ret = ret + "nil" + "ptp"
+	} else if option == TOPIC_KEY_PSB_PUSH || option == TOPIC_KEY_PSB_PULL { //pub and sub
+		ret = ret + partName + "psb"
+	}
+	return ret
 }
 
 const (
@@ -200,7 +221,6 @@ func NewPartition(broker_name, topic_name, part_name string) *Partition {
 
 const (
 	ErrHadStart = "this partition had start"
-	OK          = "ok"
 )
 
 func (p *Partition) StartGetMessage(file *File, fd *os.File, in info) string {
@@ -296,7 +316,7 @@ func (p *Partition) AddMessage(in info) (ret string, err error) {
 		p.queue = p.queue[VIRTUAL_10:]
 	}
 
-	(*in.zkclient).UpdateDup(context.Background(), &api.UpdateDupRequest{
+	(*in.zkclient).UpdateRep(context.Background(), &api.UpdateRepRequest{
 		Topic:      in.topicName,
 		Part:       in.partName,
 		BrokerName: in.BrokerName,
@@ -348,6 +368,36 @@ func NewSubScription(in info, name string, parts map[string]*Partition, files ma
 	return sub
 }
 
+// 当有消费者需要开始消费时，PTP
+// 若sub中该文件的config存在，则加入该config
+// 若sub中该文件的config不存在，则创建一个config，并加入
+func (s *SubScription) AddPTPConfig(in info, partition *Partition, file *File, zkclient *zkserver_operations.Client) (ret string, err error) {
+	s.mu.RLock()
+	if s.PTP_config == nil {
+		s.PTP_config = NewConfig(in.topicName, 0, nil, nil)
+	}
+
+	err = s.PTP_config.AddPartition(in, partition, file, zkclient)
+	s.mu.RUnlock()
+	if err != nil {
+		return err.Error(), err
+	}
+	return ret, nil
+}
+
+func (s *SubScription) AddPSBConfig(in info, partName string, file *File, zkclient *zkserver_operations.Client) (ret string, err error) {
+	s.mu.RLock()
+	_, ok := s.PSB_configs[partName+in.consumer]
+	if !ok {
+		config := NewPSBConfigPush(in, file, zkclient)
+		s.PSB_configs[partName+in.consumer] = config
+	} else {
+		logger.DEBUG(logger.DLog, "This PSB has Start\n")
+	}
+
+	s.mu.RUnlock()
+}
+
 func (s *SubScription) ShutdownConsumerInGroup(cliName string) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -382,6 +432,64 @@ type Config struct {
 	consistent *Consistent
 }
 
+func NewConfig(topicName string, partNum int, partitions map[string]*Partition, files map[string]*File) *Config {
+	config := &Config{
+		mu:       sync.RWMutex{},
+		part_num: partNum,
+		con_num:  0,
+
+		part_close: make(chan *Part),
+
+		PartToCon:  make(map[string][]string),
+		Files:      files,
+		Partitions: partitions,
+		Clis:       make(map[string]*client_operations.Client),
+		parts:      make(map[string]*Part),
+		consistent: NewConsistent(),
+	}
+
+	go config.GetCloseChan(config.part_close)
+
+	return config
+}
+
+func (c *Config) GetCloseChan(ch chan *Part) {
+	for close := range ch {
+		c.DeletePartition(close.partName, close.file)
+	}
+}
+
+// part消费完成，移除config中的Partition和Part
+func (c *Config) DeletePartition(partName string, file *File) {
+	c.mu.Lock()
+
+	c.part_num--
+	delete(c.parts, partName)
+	delete(c.Files, partName)
+
+	//该Part协程已经关闭，该partition的文件已经消费完毕
+	c.mu.Unlock()
+
+	c.RebalancePtoC() //更新配置
+	c.UpdateParts()   //应用配置
+}
+
+func (c *Config) AddPartition(in info, partition *Partition, file *File, zkclient *zkserver_operations.Client) error {
+	c.mu.Lock()
+
+	c.part_num++
+	c.Partitions[in.partName] = partition
+	c.Files[in.fileName] = file
+
+	c.parts[in.partName] = NewPart(in, file, zkclient)
+	c.parts[in.partName].Start(c.part_close)
+	c.mu.Unlock()
+
+	c.RebalancePtoC() //更新配置
+	c.UpdateParts()   //应用配置
+	return nil
+}
+
 type Consistent struct {
 	//排序的hash虚拟节点(环形)
 	hashSortedNodes []uint32
@@ -407,4 +515,15 @@ type PSBConfig_PUSH struct {
 
 	Cli  *client_operations.Client
 	part *Part //
+}
+
+func NewPSBConfigPush(in info, file *File, zkclient *zkserver_operations.Client) *PSBConfig_PUSH {
+	ret := &PSBConfig_PUSH{
+		mu:         sync.RWMutex{},
+		part_close: make(chan *Part),
+		file:       file,
+		part:       NewPart(in, file, zkclient),
+	}
+
+	return ret
 }
