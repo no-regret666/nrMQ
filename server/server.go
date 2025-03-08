@@ -12,6 +12,7 @@ import (
 	"nrMQ/kitex_gen/api/zkserver_operations"
 	"nrMQ/logger"
 	"nrMQ/zookeeper"
+	"os"
 	"sync"
 )
 
@@ -104,7 +105,7 @@ func (s *Server) Make(opt Options, opt_cli []server.Option) {
 
 	//本地创建parts-raft，为raft同步做准备
 	s.parts_rafts = NewParts_Raft()
-	go s.parts_rafts.Make(opt.Name,opt_cli,s.aplych,,s.me)
+	go s.parts_rafts.Make(opt.Name, opt_cli, s.aplych, s.me)
 	s.parts_rafts.StartServer()
 
 	//在zookeeper上创建一个永久节点，若存在则不需要创建
@@ -140,7 +141,16 @@ func (s *Server) Make(opt Options, opt_cli []server.Option) {
 	}
 
 	//开始获取管道中的内容，写入文件或更新leader
+	go s.GetApplych(s.aplych)
+}
 
+func (s *Server) CheckList() {
+	str, _ := os.Getwd()
+	str += "/" + s.Name
+	ret := CheckFileOrList(str)
+	if !ret {
+		CreateList(str)
+	}
 }
 
 // 准备接收信息
@@ -194,23 +204,48 @@ func (s *Server) PushHandle(in info) (ret string, err error) {
 }
 
 func (s *Server) InfoHandle(ipport string) error {
-	logger.DEBUG(logger.DLog,"get consumer's ip_port %v\n", ipport)
-	client,err := client_operations.NewClient("client",client.WithHostPorts(ipport))
+	logger.DEBUG(logger.DLog, "get consumer's ip_port %v\n", ipport)
+	client, err := client_operations.NewClient("client", client.WithHostPorts(ipport))
 	if err == nil {
-		logger.DEBUG(logger.DLog,"connect consumer server successful\n")
+		logger.DEBUG(logger.DLog, "connect consumer server successful\n")
 		s.mu.Lock()
-		consumer,ok := s.consumers[ipport]
+		consumer, ok := s.consumers[ipport]
 		if !ok {
-			consumer = NewClient(ipport,client)
+			consumer = NewClient(ipport, client)
 			s.consumers[ipport] = consumer
 		}
 		go s.CheckConsumer(consumer)
 		s.mu.Unlock()
-		logger.DEBUG(logger.DLog,"return resp to consumer\n")
+		logger.DEBUG(logger.DLog, "return resp to consumer\n")
 		return nil
 	}
 
-	logger.DEBUG(logger.DError,"connect client failed\n")
+	logger.DEBUG(logger.DError, "connect client failed\n")
+	return err
+}
+
+func (s *Server) StartGet(in info) (err error) {
+	//新开启一个consumer关于一个topic和partition的协程来消费该partition的信息：
+	//查询是否有该订阅的消息
+	// PTP:需要负载均衡
+	// PSB:不需要负载均衡，每个PSB开一个Part来发送消息
+	err = nil
+	switch in.option {
+	case TOPIC_NIL_PTP_PUSH:
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		//已经由zkserver检查过是否订阅
+		sub_name := GetStringfromSub(in.topicName, in.partName, in.option)
+		return s.topics[in.topicName].HandleStartToGet(sub_name, in, s.consumers[in.consumer].GetCli())
+	case TOPIC_KEY_PSB_PUSH:
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		sub_name := GetStringfromSub(in.topicName, in.partName, in.option)
+		logger.DEBUG(logger.DLog, "consumer(%v) start to get topic(%v) partition(%v) offset(%v) in sub(%v)\n", in.consumer, in.topicName, in.partName, in.offset, sub_name)
+		return s.topics[in.topicName].HandleStartToGet(sub_name, in, s.consumers[in.consumer].GetCli())
+	default:
+		err = errors.New("the option is not PTP or PSB")
+	}
 	return err
 }
 
@@ -218,7 +253,7 @@ func (s *Server) CheckConsumer(client *Client) {
 	shutdouwn := client.CheckConsumer()
 	if shutdouwn { //该consumer已关闭，平衡subscription
 		client.mu.Lock()
-		for _,subscription := range client.subList {
+		for _, subscription := range client.subList {
 			subscription.ShutdownConsumerInGroup(client.name)
 		}
 		client.mu.Unlock()
@@ -226,22 +261,22 @@ func (s *Server) CheckConsumer(client *Client) {
 }
 
 // PrepareSendHandle 准备发送消息
-//检查topic和subscription是否存在，不存在则需要创建
-//检查该文件的config是否存在，不存在则创建，并开启线程
-//协程设置超时时间，时间到则关闭
+// 检查topic和subscription是否存在，不存在则需要创建
+// 检查该文件的config是否存在，不存在则创建，并开启线程
+// 协程设置超时时间，时间到则关闭
 func (s *Server) PrepareSendHandle(in info) (ret string, err error) {
 	//检查或创建topic
 	s.mu.Lock()
-	topic,ok := s.topics[in.topicName]
+	topic, ok := s.topics[in.topicName]
 	if !ok {
-		logger.DEBUG(logger.DLog,"%v not have topic(%v),create topic\n",s.Name, in.topicName)
+		logger.DEBUG(logger.DLog, "%v not have topic(%v),create topic\n", s.Name, in.topicName)
 		topic = NewTopic(s.Name, in.topicName)
 		s.topics[in.topicName] = topic
 	}
 	s.mu.Unlock()
 
 	//检查或创建partition
-	return topic.PrepareSendHandle(in,&s.zkclient)
+	return topic.PrepareSendHandle(in, &s.zkclient)
 }
 
 // PullHandle

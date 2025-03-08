@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"hash/crc32"
 	"nrMQ/kitex_gen/api"
 	"nrMQ/kitex_gen/api/client_operations"
 	"nrMQ/kitex_gen/api/zkserver_operations"
 	"nrMQ/logger"
 	"os"
+	"sort"
 	"sync"
 )
 
@@ -385,7 +387,7 @@ func (s *SubScription) AddPTPConfig(in info, partition *Partition, file *File, z
 	return ret, nil
 }
 
-func (s *SubScription) AddPSBConfig(in info, partName string, file *File, zkclient *zkserver_operations.Client) (ret string, err error) {
+func (s *SubScription) AddPSBConfig(in info, partName string, file *File, zkclient *zkserver_operations.Client) {
 	s.mu.RLock()
 	_, ok := s.PSB_configs[partName+in.consumer]
 	if !ok {
@@ -396,6 +398,17 @@ func (s *SubScription) AddPSBConfig(in info, partName string, file *File, zkclie
 	}
 
 	s.mu.RUnlock()
+}
+
+func (s *SubScription) AddNode(in info, file *File) {
+	str := in.topicName + in.partName + in.consumer
+	s.mu.Lock()
+	_, ok := s.nodes[str]
+	if !ok {
+		node := NewNode(in, file)
+		s.nodes[str] = node
+	}
+	s.mu.Unlock()
 }
 
 func (s *SubScription) ShutdownConsumerInGroup(cliName string) string {
@@ -459,21 +472,6 @@ func (c *Config) GetCloseChan(ch chan *Part) {
 	}
 }
 
-// part消费完成，移除config中的Partition和Part
-func (c *Config) DeletePartition(partName string, file *File) {
-	c.mu.Lock()
-
-	c.part_num--
-	delete(c.parts, partName)
-	delete(c.Files, partName)
-
-	//该Part协程已经关闭，该partition的文件已经消费完毕
-	c.mu.Unlock()
-
-	c.RebalancePtoC() //更新配置
-	c.UpdateParts()   //应用配置
-}
-
 func (c *Config) AddPartition(in info, partition *Partition, file *File, zkclient *zkserver_operations.Client) error {
 	c.mu.Lock()
 
@@ -490,6 +488,79 @@ func (c *Config) AddPartition(in info, partition *Partition, file *File, zkclien
 	return nil
 }
 
+// part消费完成，移除config中的Partition和Part
+func (c *Config) DeletePartition(partName string, file *File) {
+	c.mu.Lock()
+
+	c.part_num--
+	delete(c.parts, partName)
+	delete(c.Files, partName)
+
+	//该Part协程已经关闭，该partition的文件已经消费完毕
+	c.mu.Unlock()
+
+	c.RebalancePtoC() //更新配置
+	c.UpdateParts()   //应用配置
+}
+
+// RebalancePtoC 负载均衡，将调整后的配置存入PartToCon
+// 将Consistent中的ConH置false，循环两次Partitions
+// 第一次拿取1个consumer
+// 第二次拿取靠前的ConH为true的Consumer
+// 直到遇到ConH为false的
+func (c *Config) RebalancePtoC() {
+	c.consistent.SetFreeNode() //将空闲节点设为len(consumers)
+	c.consistent.TurnZero()    //将consumer全设为空闲
+
+	parttocon := make(map[string][]string)
+
+	c.mu.RLock()
+	Parts := c.Partitions
+	c.mu.RUnlock()
+
+	for name := range Parts {
+		node := c.consistent.GetNode(name)
+		var array []string
+		array, ok := parttocon[name]
+		array = append(array, node)
+		if !ok {
+			parttocon[name] = array
+		}
+	}
+
+	for {
+		for name := range Parts {
+			if c.consistent.GetFreeNodeNum() > 0 {
+				node := c.consistent.GetNodeFree(name)
+				var array []string
+				array, ok := parttocon[name]
+				array = append(array, node)
+				if !ok {
+					parttocon[name] = array
+				}
+			} else {
+				break
+			}
+		}
+		if c.consistent.GetFreeNodeNum() <= 0 {
+			break
+		}
+	}
+	c.mu.Lock()
+	c.PartToCon = parttocon
+	c.mu.Unlock()
+}
+
+// 根据PartToCon中的配置，更新Parts中的Clis
+func (c *Config) UpdateParts() {
+	c.mu.RLock()
+	for partition_name, part := range c.parts {
+		part.UpdateClis(c.PartToCon[partition_name], c.Clis)
+	}
+	c.mu.RUnlock()
+}
+
+// 带虚拟节点的一致性哈希
 type Consistent struct {
 	//排序的hash虚拟节点(环形)
 	hashSortedNodes []uint32
@@ -507,6 +578,98 @@ type Consistent struct {
 	virtualNodeCount int
 }
 
+func NewConsistent() *Consistent {
+	con := &Consistent{
+		hashSortedNodes:  make([]uint32, 2),
+		circle:           make(map[uint32]string),
+		nodes:            make(map[string]bool),
+		ConH:             make(map[string]bool),
+		FreeNode:         0,
+		mu:               sync.RWMutex{},
+		virtualNodeCount: VIRTUAL_10,
+	}
+	return con
+}
+
+func (c *Consistent) SetFreeNode() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.FreeNode = len(c.ConH)
+}
+
+func (c *Consistent) GetFreeNodeNum() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	return c.FreeNode
+}
+
+func (c *Consistent) hashKey(key string) uint32 {
+	return crc32.ChecksumIEEE([]byte(key))
+}
+
+func (c *Consistent) TurnZero() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for key := range c.ConH {
+		c.ConH[key] = false
+	}
+}
+
+// return consumer name
+func (c *Consistent) GetNode(key string) string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	hash := c.hashKey(key)
+	i := c.getPosition(hash)
+
+	con := c.circle[c.hashSortedNodes[i]]
+
+	c.ConH[con] = true
+	c.FreeNode--
+
+	return con
+}
+
+func (c *Consistent) GetNodeFree(key string) string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	hash := c.hashKey(key)
+	i := c.getPosition(hash)
+
+	i += 1
+	for {
+		if i == len(c.hashSortedNodes)-1 {
+			i = 0
+		}
+		con := c.circle[c.hashSortedNodes[i]]
+		if !c.ConH[con] {
+			c.ConH[con] = true
+			c.FreeNode--
+			return con
+		}
+		i++
+	}
+}
+
+func (c *Consistent) getPosition(hash uint32) int {
+	i := sort.Search(len(c.hashSortedNodes), func(i int) bool { return c.hashSortedNodes[i] >= hash })
+
+	if i < len(c.hashSortedNodes) {
+		if i == len(c.hashSortedNodes)-1 {
+			return 0
+		} else {
+			return i
+		}
+	} else {
+		return len(c.hashSortedNodes) - 1
+	}
+}
+
 type PSBConfig_PUSH struct {
 	mu sync.RWMutex
 
@@ -514,7 +677,7 @@ type PSBConfig_PUSH struct {
 	file       *File
 
 	Cli  *client_operations.Client
-	part *Part //
+	part *Part
 }
 
 func NewPSBConfigPush(in info, file *File, zkclient *zkserver_operations.Client) *PSBConfig_PUSH {

@@ -195,6 +195,7 @@ func (s *RPCServer) StartToGet(ctx context.Context, req *api.InfoGetRequest) (r 
 		topicName: req.TopicName,
 		partName:  req.PartName,
 		offset:    req.Offset,
+		option:    req.Option,
 	})
 
 	if err == nil {
