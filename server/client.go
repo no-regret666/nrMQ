@@ -5,6 +5,7 @@ import (
 	"nrMQ/kitex_gen/api"
 	"nrMQ/kitex_gen/api/client_operations"
 	"nrMQ/kitex_gen/api/zkserver_operations"
+	"nrMQ/logger"
 	"os"
 	"sync"
 	"time"
@@ -55,6 +56,13 @@ func (c *Client) CheckConsumer() bool {
 	c.state = DOWN
 	c.mu.Unlock()
 	return true
+}
+
+func (c *Client) GetCli() *client_operations.Client {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	return &c.consumer
 }
 
 type Part struct {
@@ -121,6 +129,40 @@ func NewPart(in info, file *File, zkclient *zkserver_operations.Client) *Part {
 	part.index = in.offset
 
 	return part
+}
+
+func (p *Part) Start(close chan *Part) {
+	//open file
+	p.fd = *p.file.OpenFileRead()
+	offset, err := p.file.FindOffset(&p.fd, p.index)
+
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+
+	p.offset = offset
+	for i := 0; i < BUFF_NUM; i++ { //加载BUFF_NUM个block到队列中
+		err := p.AddBlock()
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+		}
+	}
+
+	go p.GetDone(close)
+
+	p.mu.Lock()
+	if p.state == DOWN {
+		p.state = ALIVE
+	} else {
+		p.mu.Unlock()
+		logger.DEBUG(logger.DError, "the part is ALIVE in before this start\n")
+		return
+	}
+
+	for name, cli := range p.clis {
+		go p.SendOneBlock(name, cli)
+	}
+	p.mu.Unlock()
 }
 
 type MSGS struct {

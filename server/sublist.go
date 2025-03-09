@@ -11,6 +11,7 @@ import (
 	"nrMQ/logger"
 	"os"
 	"sort"
+	"strconv"
 	"sync"
 )
 
@@ -184,6 +185,19 @@ func GetStringfromSub(topicName, partName string, option int8) string {
 		ret = ret + partName + "psb"
 	}
 	return ret
+}
+
+func (t *Topic) HandleStartToGet(sub_name string, in info, cli *client_operations.Client) (err error) {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	sub, ok := t.subList[sub_name]
+	if !ok {
+		ret := "this topic not have this subscription"
+		logger.DEBUG(logger.DLog, "%v\n", ret)
+		return errors.New(ret)
+	}
+	sub.AddConsumerInConfig(in, cli)
+	return nil
 }
 
 const (
@@ -411,6 +425,24 @@ func (s *SubScription) AddNode(in info, file *File) {
 	s.mu.Unlock()
 }
 
+// 将config中添加consumer 当consumer StartGet时才调用
+func (s *SubScription) AddConsumerInConfig(in info, cli *client_operations.Client) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	switch in.option {
+	case TOPIC_NIL_PTP_PUSH:
+
+		s.PTP_config.AddCli(in.consumer, cli)
+	case TOPIC_KEY_PSB_PUSH:
+		config, ok := s.PSB_configs[in.partName+in.consumer]
+		if !ok {
+			logger.DEBUG(logger.DError, "this PSBConfig PUSH id not been\n")
+		}
+		config.Start(in, cli)
+	}
+}
+
 func (s *SubScription) ShutdownConsumerInGroup(cliName string) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -560,6 +592,23 @@ func (c *Config) UpdateParts() {
 	c.mu.RUnlock()
 }
 
+// 向Clis加入此consumer的句柄，重新负载均衡，并修改Parts中的clis数组
+func (c *Config) AddCli(cli_name string, cli *client_operations.Client) {
+	c.mu.Lock()
+
+	c.con_num++
+	c.Clis[cli_name] = cli
+
+	err := c.consistent.Add(cli_name, 1)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+
+	c.mu.Unlock()
+	c.RebalancePtoC()
+	c.UpdateParts()
+}
+
 // 带虚拟节点的一致性哈希
 type Consistent struct {
 	//排序的hash虚拟节点(环形)
@@ -607,6 +656,32 @@ func (c *Consistent) GetFreeNodeNum() int {
 
 func (c *Consistent) hashKey(key string) uint32 {
 	return crc32.ChecksumIEEE([]byte(key))
+}
+
+// add consumer name as node
+func (c *Consistent) Add(node string, power int) error {
+	if node == "" {
+		return nil
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if _, ok := c.nodes[node]; ok {
+		return errors.New("node is already existed")
+	}
+	c.nodes[node] = true
+	c.ConH[node] = false
+	for i := 0; i < c.virtualNodeCount*power; i++ {
+		virtualKey := c.hashKey(node + strconv.Itoa(i))
+		c.circle[virtualKey] = node
+		c.hashSortedNodes = append(c.hashSortedNodes, virtualKey)
+	}
+
+	sort.Slice(c.hashSortedNodes, func(i, j int) bool {
+		return c.hashSortedNodes[i] < c.hashSortedNodes[j]
+	})
+
+	return nil
 }
 
 func (c *Consistent) TurnZero() {

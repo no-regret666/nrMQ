@@ -125,3 +125,45 @@ func (f *File) WriteFile(file *os.File, node Key, data_msg []byte) bool {
 		return true
 	}
 }
+
+func (f *File) OpenFileRead() *os.File {
+	f.mu.RLock()
+	fd, err := os.OpenFile(f.filename, os.O_RDONLY, 0666)
+	f.mu.RUnlock()
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return nil
+	}
+	return fd
+}
+
+func (f *File) FindOffset(file *os.File, index int64) (int64, error) {
+	var node Key
+	data_node := make([]byte, NODE_SIZE)
+	offset := int64(0)
+	for {
+		logger.DEBUG(logger.DLog, "the file name is %v\n", f.filename)
+		f.mu.RLock()
+		size, err := file.ReadAt(data_node, offset)
+		f.mu.RUnlock()
+
+		if err == io.EOF { //读到文件末尾
+			logger.DEBUG(logger.DLog, "read All file,do not find this index\n")
+			return index, io.EOF
+		}
+		if size != NODE_SIZE {
+			logger.DEBUG(logger.DLog2, "the size is %v NODE_SIZE is %v\n", size, NODE_SIZE)
+			return int64(-1), errors.New("read node size is not NODE_SIZE")
+		}
+		buf := &bytes.Buffer{}
+		binary.Write(buf, binary.BigEndian, data_node)
+		binary.Read(buf, binary.BigEndian, &node)
+		if node.End_index < index {
+			offset += int64(NODE_SIZE + node.Size)
+		} else {
+			break
+		}
+	}
+
+	return offset, nil
+}
