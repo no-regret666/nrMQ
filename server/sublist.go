@@ -432,7 +432,6 @@ func (s *SubScription) AddConsumerInConfig(in info, cli *client_operations.Clien
 
 	switch in.option {
 	case TOPIC_NIL_PTP_PUSH:
-
 		s.PTP_config.AddCli(in.consumer, cli)
 	case TOPIC_KEY_PSB_PUSH:
 		config, ok := s.PSB_configs[in.partName+in.consumer]
@@ -764,4 +763,16 @@ func NewPSBConfigPush(in info, file *File, zkclient *zkserver_operations.Client)
 	}
 
 	return ret
+}
+
+func (pc *PSBConfig_PUSH) Start(in info, cli *client_operations.Client) {
+	pc.mu.Lock()
+	pc.Cli = cli
+	var names []string
+	clis := make(map[string]*client_operations.Client)
+	names = append(names, in.consumer)
+	clis[in.consumer] = cli
+	pc.part.UpdateClis(names, clis)
+	pc.part.Start(pc.part_close)
+	pc.mu.Unlock()
 }

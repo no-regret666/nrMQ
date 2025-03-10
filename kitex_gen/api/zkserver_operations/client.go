@@ -18,6 +18,7 @@ type Client interface {
 	ConStartGetBroker(ctx context.Context, req *api.ConStartGetBrokRequest, callOptions ...callopt.Option) (r *api.ConStartGetBrokResponse, err error)
 	BroInfo(ctx context.Context, req *api.BroInfoRequest, callOptions ...callopt.Option) (r *api.BroInfoResponse, err error)
 	UpdateRep(ctx context.Context, req *api.UpdateRepRequest, callOptions ...callopt.Option) (r *api.UpdateRepResponse, err error)
+	UpdatePTPOffset(ctx context.Context, req *api.UpdatePTPOffsetRequest, callOptions ...callopt.Option) (r *api.UpdatePTPOffsetResponse, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -82,4 +83,9 @@ func (p *kZkServer_OperationsClient) BroInfo(ctx context.Context, req *api.BroIn
 func (p *kZkServer_OperationsClient) UpdateRep(ctx context.Context, req *api.UpdateRepRequest, callOptions ...callopt.Option) (r *api.UpdateRepResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.UpdateRep(ctx, req)
+}
+
+func (p *kZkServer_OperationsClient) UpdatePTPOffset(ctx context.Context, req *api.UpdatePTPOffsetRequest, callOptions ...callopt.Option) (r *api.UpdatePTPOffsetResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.UpdatePTPOffset(ctx, req)
 }

@@ -62,6 +62,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
+	"UpdatePTPOffset": kitex.NewMethodInfo(
+		updatePTPOffsetHandler,
+		newZkServer_OperationsUpdatePTPOffsetArgs,
+		newZkServer_OperationsUpdatePTPOffsetResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
 }
 
 var (
@@ -254,6 +261,24 @@ func newZkServer_OperationsUpdateRepResult() interface{} {
 	return api.NewZkServer_OperationsUpdateRepResult()
 }
 
+func updatePTPOffsetHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.ZkServer_OperationsUpdatePTPOffsetArgs)
+	realResult := result.(*api.ZkServer_OperationsUpdatePTPOffsetResult)
+	success, err := handler.(api.ZkServer_Operations).UpdatePTPOffset(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newZkServer_OperationsUpdatePTPOffsetArgs() interface{} {
+	return api.NewZkServer_OperationsUpdatePTPOffsetArgs()
+}
+
+func newZkServer_OperationsUpdatePTPOffsetResult() interface{} {
+	return api.NewZkServer_OperationsUpdatePTPOffsetResult()
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -329,6 +354,16 @@ func (p *kClient) UpdateRep(ctx context.Context, req *api.UpdateRepRequest) (r *
 	_args.Req = req
 	var _result api.ZkServer_OperationsUpdateRepResult
 	if err = p.c.Call(ctx, "UpdateRep", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) UpdatePTPOffset(ctx context.Context, req *api.UpdatePTPOffsetRequest) (r *api.UpdatePTPOffsetResponse, err error) {
+	var _args api.ZkServer_OperationsUpdatePTPOffsetArgs
+	_args.Req = req
+	var _result api.ZkServer_OperationsUpdatePTPOffsetResult
+	if err = p.c.Call(ctx, "UpdatePTPOffset", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

@@ -3,6 +3,7 @@ package server
 import (
 	Ser "github.com/cloudwego/kitex/server"
 	"net"
+	"nrMQ/kitex_gen/api/client_operations"
 	"nrMQ/logger"
 	"nrMQ/zookeeper"
 	"os"
@@ -107,4 +108,26 @@ func CreateFile(path string) (file *os.File, err error) {
 func GetBlockName(fileName string) (ret string) {
 	ret = fileName[:len(fileName)-4]
 	return ret
+}
+
+func CheckChangeCli(old map[string]*client_operations.Client, new []string) (reduce, add []string) {
+	for _, new_cli := range new {
+		if _, ok := old[new_cli]; !ok { //new_cli 在old中没有
+			add = append(add, new_cli)
+		}
+	}
+
+	for old_cli := range old {
+		had := false //不存在
+		for _, name := range new {
+			if old_cli == name {
+				had = true
+				break
+			}
+		}
+		if !had {
+			reduce = append(reduce, old_cli)
+		}
+	}
+	return reduce, add
 }

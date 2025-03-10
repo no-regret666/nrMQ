@@ -219,6 +219,16 @@ struct UpdateRepResponse {
     1: bool ret
 }
 
+struct UpdatePTPOffsetRequest {
+    1: string topic
+    2: string part
+    3: i64 offset
+}
+
+struct UpdatePTPOffsetResponse {
+    1: bool ret
+}
+
 service ZkServer_Operations {
     //produce
     CreateTopicResponse CreateTopic(1: CreateTopicRequest req)
@@ -233,6 +243,7 @@ service ZkServer_Operations {
     BroInfoResponse BroInfo(1: BroInfoRequest req) //broker发送info让zkserver连接broker
     //broker更新topic-partition的offset
     UpdateRepResponse UpdateRep(1: UpdateRepRequest req)
+    UpdatePTPOffsetResponse UpdatePTPOffset(1: UpdatePTPOffsetRequest req)
 }
 
 struct PubRequest {

@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"io"
 	"nrMQ/logger"
@@ -166,4 +167,40 @@ func (f *File) FindOffset(file *os.File, index int64) (int64, error) {
 	}
 
 	return offset, nil
+}
+
+func (f *File) ReadFile(file *os.File, offset int64) (Key, []Message, error) {
+	var node Key
+	var msg []Message
+	data_node := make([]byte, NODE_SIZE)
+
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+
+	size, err := file.ReadAt(data_node, offset)
+	if size != NODE_SIZE {
+		return node, msg, errors.New("read node size is not NODE_SIZE")
+	}
+	if err == io.EOF {
+		//读到文件末尾
+		logger.DEBUG(logger.DLeader, "read All file,do not find this index")
+		return node, msg, err
+	}
+
+	buf := &bytes.Buffer{}
+	binary.Write(buf, binary.BigEndian, data_node)
+	binary.Read(buf, binary.BigEndian, &node)
+	data_msg := make([]byte, node.Size)
+	offset += int64(f.node_size)
+	size, err = file.ReadAt(data_msg, offset)
+
+	if int64(size) != node.Size {
+		return node, msg, errors.New("read node size is not NODE_SIZE")
+	}
+	if err != nil {
+		return node, msg, errors.New("read All file,do not find this index")
+	}
+
+	json.Unmarshal(data_msg, &msg)
+	return node, msg, nil
 }
