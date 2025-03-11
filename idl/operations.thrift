@@ -126,6 +126,51 @@ struct PrepareSendResponse {
     2: string err //若已经准备好"had_done"
 }
 
+struct AddRaftPartitionRequest {
+    1: string TopicName
+    2: string PartName
+    3: binary Brokers
+}
+
+struct AddRaftPartitionResponse {
+    1: bool Ret
+    2: string Err
+}
+
+struct CloseRaftPartitionRequest {
+    1: string TopicName
+    2: string PartName
+}
+
+struct CloseRaftPartitionResponse {
+    1: bool Ret
+    2: string Err
+}
+
+struct AddFetchPartitionRequest {
+    1: string TopicName
+    2: string PartName
+    3: string LeaderBroker
+    4: string HostPort
+    5: binary Brokers
+    6: string FileName
+}
+
+struct AddFetchPartitionResponse {
+    1: bool Ret
+    2: string Err
+}
+
+struct CloseFetchPartitionRequest {
+    1: string TopicName
+    2: string PartName
+}
+
+struct CloseFetchPartitionResponse {
+    1: bool Ret
+    2: string Err
+}
+
 service Server_Operations {
     //producer used
     PushResponse push(1: PushRequest req)
@@ -140,6 +185,11 @@ service Server_Operations {
     CloseAcceptResponse CloseAccept(1: CloseAcceptRequest req)
     PrepareStateResponse PrepareState(1: PrepareStateRequest req)
     PrepareSendResponse PrepareSend(1: PrepareSendRequest req)
+
+    AddRaftPartitionResponse AddRaftPartition(1: AddRaftPartitionRequest req)
+    CloseRaftPartitionResponse CloseRaftPartition(1: CloseAcceptRequest req)
+    AddFetchPartitionResponse AddFetchPartition(1: AddFetchPartitionRequest req)
+    CloseFetchPartitionResponse CloseFetchPartition(1: CloseAcceptRequest req)
 }
 
 struct CreateTopicRequest {
@@ -157,6 +207,18 @@ struct CreatePartRequest {
 }
 
 struct CreatePartResponse {
+    1: bool ret
+    2: string err
+}
+
+struct SetPartitionStateRequest {
+    1: string topic
+    2: string part
+    3: i8 option
+    4: i8 repNum
+}
+
+struct SetPartitionStateResponse {
     1: bool ret
     2: string err
 }
@@ -233,6 +295,7 @@ service ZkServer_Operations {
     //produce
     CreateTopicResponse CreateTopic(1: CreateTopicRequest req)
     CreatePartResponse CreatePart(1: CreatePartRequest req)
+    SetPartitionStateResponse SetPartitionState(1: SetPartitionStateRequest req)
     ProGetLeaderResponse ProGetLeader(1: ProGetLeaderRequest req)
 
     //consumer

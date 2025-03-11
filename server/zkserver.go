@@ -39,7 +39,7 @@ type Info_in struct {
 	blockName string
 	index     int64
 	option    int8
-	dupNum    int8
+	repNum    int8
 }
 
 type Info_out struct {
@@ -84,6 +84,121 @@ func (z *ZKServer) CreatePart(info Info_in) Info_out {
 	return Info_out{Err: err}
 }
 
+// 设置Partition的接收信息方式
+// 若ack = -1,则为raft同步信息
+// 若ack = 1,则leader写入,fetch获取信息
+// 若ack = 0,则立刻返回，fetch获取信息
+func (z *ZKServer) SetPartitionState(info Info_in) Info_out {
+	var ret string
+	var data_brokers []byte
+	var reps []zookeeper.ReplicaNode
+	node, err := z.zk.GetPartState(info.topicName, info.partName)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return Info_out{Err: err}
+	}
+
+	if info.option != node.Option {
+		index, err := z.zk.GetPartBlockIndex(info.topicName, info.partName)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err)
+			return Info_out{Err: err}
+		}
+		z.zk.UpdatePartitionNode(zookeeper.PartitionNode{
+			TopicName: info.topicName,
+			Name:      info.partName,
+			Index:     index,
+			Option:    info.option,
+			PTPoffset: node.PTPoffset,
+			RepNum:    info.repNum, //需要下面的程序确认，是否能分配一定数量的副本
+		})
+	}
+
+	logger.DEBUG(logger.DLog, "this partition(%v) status is %v\n", node.Name, node.Option)
+
+	if node.Option == -2 {
+		//未创建任何状态，即该partition未接收过任何消息
+
+		switch info.option {
+		case -1:
+			//raft副本个数暂时默认3个
+			reps, data_brokers = z.GetRepsFromConsist(info)
+
+			//向这些broker发送信息，启动raft
+			for _, repNode := range reps {
+				bro_cli, ok := z.Brokers[repNode.BrokerName]
+				if !ok {
+					logger.DEBUG(logger.DLog, "this partition(%v) leader broker is not connected\n", info.partName)
+				} else {
+					resp, err := bro_cli.AddRaftPartition(context.Background(), &api.AddRaftPartitionRequest{
+						TopicName: info.topicName,
+						PartName:  info.partName,
+						Brokers:   data_brokers,
+					})
+
+					logger.DEBUG(logger.DLog, "the broker %v had add raft\n", repNode.BrokerName)
+					if err != nil {
+						logger.DEBUG(logger.DError, "%v err(%v)\n", resp, err.Error())
+						return Info_out{Err: err}
+					}
+				}
+			}
+		default:
+			//负载均衡获得一定数量broker节点，选择一个leader，并让其他节点fetch leader消息
+			//默认副本数为3
+
+			reps, data_brokers = z.GetRepsFromConsist(info)
+
+			//选择一个broker节点作为leader
+			LeaderBroker, err := z.zk.GetBrokerNode(reps[0].BrokerName)
+			if err != nil {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+				return Info_out{Err: err}
+			}
+
+			//更新newblock中的leader
+			err = z.BecomeLeader(Info_in{
+				cliName:   reps[0].BrokerName,
+				topicName: info.topicName,
+				partName:  info.partName,
+			})
+
+			if err != nil {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+				return Info_out{Err: err}
+			}
+
+			for _, repNode := range reps {
+				bro_cli, ok := z.Brokers[repNode.BrokerName]
+				if !ok {
+					logger.DEBUG(logger.DError, "this partition(%v) leader broker is not connected\n", info.partName)
+				} else {
+					//开启fetch机制
+					resp3, err := bro_cli.AddFetchPartition(context.Background(), &api.AddFetchPartitionRequest{
+						TopicName:    info.topicName,
+						PartName:     info.partName,
+						HostPort:     LeaderBroker.BrokHostPort,
+						LeaderBroker: LeaderBroker.Name,
+						FileName:     "NowBlock.txt",
+						Brokers:      data_brokers,
+					})
+
+					if err != nil {
+						logger.DEBUG(logger.DError, "%v err(%v)\n", resp3, err.Error())
+						return Info_out{Err: err}
+					}
+				}
+			}
+		}
+
+		return Info_out{
+			Ret: ret,
+		}
+	}
+
+	//获取该partition
+}
+
 // producer get broker
 func (z *ZKServer) ProGetLeader(info Info_in) Info_out {
 	//查询zookeeper,获得leaderBroker的host_port，若未连接则建立连接
@@ -123,12 +238,12 @@ func (z *ZKServer) ProGetLeader(info Info_in) Info_out {
 
 		//未连接该broker
 		if !ok {
-			bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(BrokerHostPort))
+			bro_cli, err = server_operations.NewClient(z.Name, client.WithHostPorts(BrokerHostPort))
 			if err != nil {
 				logger.DEBUG(logger.DError, "%v\n", err.Error())
 			}
 			z.mu.Lock()
-			z.Brokers[broker.Name] = bro_cli
+			z.Brokers[BrokerName] = bro_cli
 			z.mu.Unlock()
 		}
 

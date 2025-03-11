@@ -59,6 +59,20 @@ func (p *Producer) CreatePart(topicName, partName string) error {
 	return nil
 }
 
+func (p *Producer) SetPartitionState(topicName, partName string, option, repNum int8) error {
+	resp, err := p.ZkBroker.SetPartitionState(context.Background(), &api.SetPartitionStateRequest{
+		Topic:  topicName,
+		Part:   partName,
+		Option: option,
+		RepNum: repNum,
+	})
+
+	if err != nil || !resp.Ret {
+		return err
+	}
+	return nil
+}
+
 func (p *Producer) Push(msg Message, ack int) error {
 	str := msg.Topic + msg.Partition
 	p.mu.RLock()

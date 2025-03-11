@@ -27,6 +27,13 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
+	"SetPartitionState": kitex.NewMethodInfo(
+		setPartitionStateHandler,
+		newZkServer_OperationsSetPartitionStateArgs,
+		newZkServer_OperationsSetPartitionStateResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
 	"ProGetLeader": kitex.NewMethodInfo(
 		proGetLeaderHandler,
 		newZkServer_OperationsProGetLeaderArgs,
@@ -171,6 +178,24 @@ func newZkServer_OperationsCreatePartResult() interface{} {
 	return api.NewZkServer_OperationsCreatePartResult()
 }
 
+func setPartitionStateHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.ZkServer_OperationsSetPartitionStateArgs)
+	realResult := result.(*api.ZkServer_OperationsSetPartitionStateResult)
+	success, err := handler.(api.ZkServer_Operations).SetPartitionState(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newZkServer_OperationsSetPartitionStateArgs() interface{} {
+	return api.NewZkServer_OperationsSetPartitionStateArgs()
+}
+
+func newZkServer_OperationsSetPartitionStateResult() interface{} {
+	return api.NewZkServer_OperationsSetPartitionStateResult()
+}
+
 func proGetLeaderHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
 	realArg := arg.(*api.ZkServer_OperationsProGetLeaderArgs)
 	realResult := result.(*api.ZkServer_OperationsProGetLeaderResult)
@@ -304,6 +329,16 @@ func (p *kClient) CreatePart(ctx context.Context, req *api.CreatePartRequest) (r
 	_args.Req = req
 	var _result api.ZkServer_OperationsCreatePartResult
 	if err = p.c.Call(ctx, "CreatePart", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) SetPartitionState(ctx context.Context, req *api.SetPartitionStateRequest) (r *api.SetPartitionStateResponse, err error) {
+	var _args api.ZkServer_OperationsSetPartitionStateArgs
+	_args.Req = req
+	var _result api.ZkServer_OperationsSetPartitionStateResult
+	if err = p.c.Call(ctx, "SetPartitionState", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil

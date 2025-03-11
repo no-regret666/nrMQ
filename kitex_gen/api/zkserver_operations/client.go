@@ -13,6 +13,7 @@ import (
 type Client interface {
 	CreateTopic(ctx context.Context, req *api.CreateTopicRequest, callOptions ...callopt.Option) (r *api.CreateTopicResponse, err error)
 	CreatePart(ctx context.Context, req *api.CreatePartRequest, callOptions ...callopt.Option) (r *api.CreatePartResponse, err error)
+	SetPartitionState(ctx context.Context, req *api.SetPartitionStateRequest, callOptions ...callopt.Option) (r *api.SetPartitionStateResponse, err error)
 	ProGetLeader(ctx context.Context, req *api.ProGetLeaderRequest, callOptions ...callopt.Option) (r *api.ProGetLeaderResponse, err error)
 	Sub(ctx context.Context, req *api.SubRequest, callOptions ...callopt.Option) (r *api.SubResponse, err error)
 	ConStartGetBroker(ctx context.Context, req *api.ConStartGetBrokRequest, callOptions ...callopt.Option) (r *api.ConStartGetBrokResponse, err error)
@@ -58,6 +59,11 @@ func (p *kZkServer_OperationsClient) CreateTopic(ctx context.Context, req *api.C
 func (p *kZkServer_OperationsClient) CreatePart(ctx context.Context, req *api.CreatePartRequest, callOptions ...callopt.Option) (r *api.CreatePartResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.CreatePart(ctx, req)
+}
+
+func (p *kZkServer_OperationsClient) SetPartitionState(ctx context.Context, req *api.SetPartitionStateRequest, callOptions ...callopt.Option) (r *api.SetPartitionStateResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.SetPartitionState(ctx, req)
 }
 
 func (p *kZkServer_OperationsClient) ProGetLeader(ctx context.Context, req *api.ProGetLeaderRequest, callOptions ...callopt.Option) (r *api.ProGetLeaderResponse, err error) {

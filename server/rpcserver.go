@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/cloudwego/kitex/server"
 	"io"
@@ -116,6 +117,27 @@ func (s *RPCServer) CreatePart(ctx context.Context, req *api.CreatePartRequest) 
 	}, nil
 }
 
+func (s *RPCServer) SetPartitionState(ctx context.Context, req *api.SetPartitionStateRequest) (r *api.SetPartitionStateResponse, err error) {
+	info := s.zkserver.SetPartitionState(Info_in{
+		topicName: req.Topic,
+		partName:  req.Part,
+		option:    req.Option,
+		repNum:    req.RepNum,
+	})
+
+	if info.Err != nil {
+		return &api.SetPartitionStateResponse{
+			Ret: false,
+			Err: info.Err.Error(),
+		}, info.Err
+	}
+
+	return &api.SetPartitionStateResponse{
+		Ret: true,
+		Err: "ok",
+	}, nil
+}
+
 // producer---->zkserver 获取该向哪个broker发送消息
 func (s *RPCServer) ProGetLeader(ctx context.Context, req *api.ProGetLeaderRequest) (r *api.ProGetLeaderResponse, err error) {
 	info := s.zkserver.ProGetLeader(Info_in{
@@ -151,6 +173,31 @@ func (s *RPCServer) PrepareAccept(ctx context.Context, req *api.PrepareAcceptReq
 	}
 
 	return &api.PrepareAcceptResponse{
+		Ret: true,
+		Err: ret,
+	}, nil
+}
+
+// zkserver---->broker server
+// zkserver通知broker检查partition的state是否设置
+// raft集群，或fetch机制是否开启
+func (s *RPCServer) PrepareState(ctx context.Context, req *api.PrepareStateRequest) (r *api.PrepareStateResponse, err error) {
+	var brokers BrokerS
+	json.Unmarshal(req.Brokers, &brokers)
+	ret, err := s.server.PrepareState(info{
+		topicName: req.TopicName,
+		partName:  req.PartName,
+		option:    req.State,
+		brokers:   brokers.BroBrokers,
+	})
+	if err != nil {
+		return &api.PrepareStateResponse{
+			Ret: false,
+			Err: ret,
+		}, err
+	}
+
+	return &api.PrepareStateResponse{
 		Ret: true,
 		Err: ret,
 	}, nil
@@ -300,11 +347,6 @@ func (s *RPCServer) CloseAccept(ctx context.Context, req *api.CloseAcceptRequest
 		Startindex: start,
 		Endindex:   end,
 	}, nil
-}
-
-func (s *RPCServer) PrepareState(ctx context.Context, req *api.PrepareStateRequest) (r *api.PrepareStateResponse, err error) {
-	//TODO implement me
-	panic("implement me")
 }
 
 // zkserver---->broker server

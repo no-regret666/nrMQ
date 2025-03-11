@@ -79,7 +79,7 @@ type info struct {
 	LeaderBroker string
 	HostPort     string
 
-	//update dup
+	//update rep
 	zkclient   *zkserver_operations.Client
 	BrokerName string
 }
@@ -169,6 +169,22 @@ func (s *Server) PrepareAcceptHandle(in info) (ret string, err error) {
 
 	//检查partition
 	return topic.PrepareAcceptHandle(in)
+}
+
+func (s *Server) PrepareState(in info) (ret string, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	switch in.option {
+	case -1:
+		ok := s.parts_rafts.CheckPartState(in.topicName, in.partName)
+		if !ok {
+			ret = "the raft not exists"
+			err = errors.New(ret)
+		}
+	default:
+
+	}
+	return ret, err
 }
 
 // start到该partition中的raft集群中

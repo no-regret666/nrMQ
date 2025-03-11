@@ -19,6 +19,10 @@ type Client interface {
 	CloseAccept(ctx context.Context, req *api.CloseAcceptRequest, callOptions ...callopt.Option) (r *api.CloseAcceptResponse, err error)
 	PrepareState(ctx context.Context, req *api.PrepareStateRequest, callOptions ...callopt.Option) (r *api.PrepareStateResponse, err error)
 	PrepareSend(ctx context.Context, req *api.PrepareSendRequest, callOptions ...callopt.Option) (r *api.PrepareSendResponse, err error)
+	AddRaftPartition(ctx context.Context, req *api.AddRaftPartitionRequest, callOptions ...callopt.Option) (r *api.AddRaftPartitionResponse, err error)
+	CloseRaftPartition(ctx context.Context, req *api.CloseAcceptRequest, callOptions ...callopt.Option) (r *api.CloseRaftPartitionResponse, err error)
+	AddFetchPartition(ctx context.Context, req *api.AddFetchPartitionRequest, callOptions ...callopt.Option) (r *api.AddFetchPartitionResponse, err error)
+	CloseFetchPartition(ctx context.Context, req *api.CloseAcceptRequest, callOptions ...callopt.Option) (r *api.CloseFetchPartitionResponse, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -88,4 +92,24 @@ func (p *kServer_OperationsClient) PrepareState(ctx context.Context, req *api.Pr
 func (p *kServer_OperationsClient) PrepareSend(ctx context.Context, req *api.PrepareSendRequest, callOptions ...callopt.Option) (r *api.PrepareSendResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.PrepareSend(ctx, req)
+}
+
+func (p *kServer_OperationsClient) AddRaftPartition(ctx context.Context, req *api.AddRaftPartitionRequest, callOptions ...callopt.Option) (r *api.AddRaftPartitionResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.AddRaftPartition(ctx, req)
+}
+
+func (p *kServer_OperationsClient) CloseRaftPartition(ctx context.Context, req *api.CloseAcceptRequest, callOptions ...callopt.Option) (r *api.CloseRaftPartitionResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.CloseRaftPartition(ctx, req)
+}
+
+func (p *kServer_OperationsClient) AddFetchPartition(ctx context.Context, req *api.AddFetchPartitionRequest, callOptions ...callopt.Option) (r *api.AddFetchPartitionResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.AddFetchPartition(ctx, req)
+}
+
+func (p *kServer_OperationsClient) CloseFetchPartition(ctx context.Context, req *api.CloseAcceptRequest, callOptions ...callopt.Option) (r *api.CloseFetchPartitionResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.CloseFetchPartition(ctx, req)
 }

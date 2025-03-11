@@ -64,7 +64,7 @@ type PartitionNode struct {
 	TopicName string `json:"topicName"`
 	Index     int64  `json:"index"`
 	Option    int8   `json:"option"` //partition的状态
-	DupNum    int8   `json:"dupNum"` //副本数量
+	RepNum    int8   `json:"repNum"` //副本数量
 	PTPoffset int64  `json:"ptpoffset"`
 }
 
@@ -474,11 +474,11 @@ func (z *ZK) GetReplicaNodes(topicName, partName, blockName string) (nodes []Rep
 	path := fmt.Sprintf(BlNodePath, z.TopicRoot, topicName, partName, blockName)
 	reps, _, _ := z.conn.Children(path)
 	for _, repName := range reps {
-		DupNode, err := z.GetReplicaNode(path + "/" + repName)
+		RepNode, err := z.GetReplicaNode(path + "/" + repName)
 		if err != nil {
 			logger.DEBUG(logger.DError, "the replica node %v doesn't exist", path+"/"+repName)
 		} else {
-			nodes = append(nodes, DupNode)
+			nodes = append(nodes, RepNode)
 		}
 	}
 	return nodes
@@ -508,4 +508,15 @@ func (z *ZK) GetPartNowBrokerNode(topicName, partName string) (BrokerNode, Block
 			time.Sleep(time.Second * 1)
 		}
 	}
+}
+
+func (z *ZK) GetPartBlockIndex(topicName, partName string) (int64, error) {
+	str := z.TopicRoot + "/" + topicName + "/" + "Partitions" + "/" + partName
+	node, err := z.GetPartitionNode(str)
+	if err != nil {
+		logger.DEBUG(logger.DError, "get partition node fail path is %v err is %v\n", str, err.Error())
+		return 0, err
+	}
+
+	return node.Index, nil
 }
