@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"nrMQ/kitex_gen/api"
 	"nrMQ/kitex_gen/api/client_operations"
 	"nrMQ/kitex_gen/api/zkserver_operations"
@@ -405,4 +406,39 @@ func NewNode(in info, file *File) *Node {
 	node.fd = *node.file.OpenFileRead()
 	node.offset = -1
 	return node
+}
+
+func (n *Node) ReadMSGS(in info) (MSGS, error) {
+	var err error
+	var msgs MSGS
+	if n.offset == -1 || n.start_index != in.offset {
+		n.offset, err = n.file.FindOffset(&n.fd, in.offset)
+		if err != nil {
+			logger.DEBUG(logger.DLog2, "%v\n", err.Error())
+			return MSGS{}, err
+		}
+	}
+	nums := 0
+	for nums < int(in.size) {
+		node, msg, err := n.file.ReadBytes(&n.fd, n.offset)
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+				return MSGS{}, err
+			}
+		}
+		if nums == 0 {
+			msgs.start_index = node.Start_index
+			msgs.end_index = node.End_index
+		}
+		nums += int(node.Size)
+		n.offset += int64(NODE_SIZE) + node.Size
+		msgs.size = int8(nums)
+		msgs.array = append(msgs.array, msg...)
+		msgs.end_index = node.End_index
+	}
+
+	return msgs, nil
 }

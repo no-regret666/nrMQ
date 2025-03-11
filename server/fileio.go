@@ -204,3 +204,37 @@ func (f *File) ReadFile(file *os.File, offset int64) (Key, []Message, error) {
 	json.Unmarshal(data_msg, &msg)
 	return node, msg, nil
 }
+
+func (f *File) ReadBytes(file *os.File, offset int64) (Key, []byte, error) {
+	var node Key
+	data_node := make([]byte, NODE_SIZE)
+
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+
+	size, err := file.ReadAt(data_node, offset)
+
+	if size != NODE_SIZE {
+		return node, nil, errors.New("read node size is not NODE_SIZE")
+	}
+	if err == io.EOF { //读到文件末尾
+		logger.DEBUG(logger.DLeader, "read All file,do not find this index")
+		return node, nil, err
+	}
+
+	buf := &bytes.Buffer{}
+	binary.Write(buf, binary.BigEndian, data_node)
+	binary.Read(buf, binary.BigEndian, &node)
+	data_msg := make([]byte, node.Size)
+	offset += int64(f.node_size)
+	size, err = file.ReadAt(data_msg, offset)
+
+	if int64(size) != node.Size {
+		return node, nil, errors.New("read node size is not NODE_SIZE")
+	}
+	if err == io.EOF {
+		return node, nil, errors.New("read All file,do not find this index")
+	}
+
+	return node, data_msg, nil
+}

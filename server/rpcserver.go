@@ -231,8 +231,12 @@ func (s *RPCServer) Pull(ctx context.Context, req *api.PullRequest) (r *api.Pull
 	}
 
 	return &api.PullResponse{
-		Msgs: ret.array,
-	}
+		Msgs:       ret.array,
+		StartIndex: ret.start_index,
+		EndIndex:   ret.end_index,
+		Size:       ret.size,
+		Err:        Err,
+	}, nil
 }
 
 func (s *RPCServer) Sub(ctx context.Context, req *api.SubRequest) (r *api.SubResponse, err error) {
@@ -343,6 +347,11 @@ func (s *RPCServer) BroInfo(ctx context.Context, req *api.BroInfoRequest) (r *ap
 }
 
 func (s *RPCServer) UpdateRep(ctx context.Context, req *api.UpdateRepRequest) (r *api.UpdateRepResponse, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *RPCServer) UpdatePTPOffset(ctx context.Context, req *api.UpdatePTPOffsetRequest) (r *api.UpdatePTPOffsetResponse, err error) {
 	//TODO implement me
 	panic("implement me")
 }

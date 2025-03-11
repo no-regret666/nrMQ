@@ -286,6 +286,20 @@ func (s *Server) PullHandle(in info) (MSGS, error) {
 	//若该请求属于PTP则读取index，获取上次的index，写入zookeeper中
 	logger.DEBUG(logger.DLog, "%v get pull request the in.op(%v) TOP_PTP_PULL(%v)\n", s.Name, in.option, TOPIC_NIL_PTP_PULL)
 	if in.option == TOPIC_NIL_PTP_PULL {
-
+		s.zkclient.UpdatePTPOffset(context.Background(), &api.UpdatePTPOffsetRequest{
+			Topic:  in.topicName,
+			Part:   in.partName,
+			Offset: in.offset,
+		})
 	}
+
+	s.mu.RLock()
+	topic, ok := s.topics[in.topicName]
+	s.mu.RUnlock()
+	if !ok {
+		logger.DEBUG(logger.DError, "this topic is not in this broker")
+		return MSGS{}, errors.New("this topic is not in this broker")
+	}
+
+	return topic.PullMessage(in)
 }

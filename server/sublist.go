@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"hash/crc32"
 	"nrMQ/kitex_gen/api"
 	"nrMQ/kitex_gen/api/client_operations"
@@ -198,6 +199,21 @@ func (t *Topic) HandleStartToGet(sub_name string, in info, cli *client_operation
 	}
 	sub.AddConsumerInConfig(in, cli)
 	return nil
+}
+
+func (t *Topic) PullMessage(in info) (MSGS, error) {
+	logger.DEBUG(logger.DLog, "the info %v\n", in)
+	sub_name := GetStringfromSub(in.topicName, in.partName, in.option)
+	t.mu.RLock()
+	sub, ok := t.subList[sub_name]
+	t.mu.RUnlock()
+	if !ok {
+		str := fmt.Sprintf("%v this topic(%v) don't have sub(%v) the sublist is %v for %v\n", t.Broker, t.Name, sub_name, t.subList, in.consumer)
+		logger.DEBUG(logger.DError, "%v\n", str)
+		return MSGS{}, errors.New(str)
+	}
+
+	return sub.PullMsgs(in)
 }
 
 const (
@@ -456,6 +472,18 @@ func (s *SubScription) ShutdownConsumerInGroup(cliName string) string {
 	}
 
 	return s.topic_name
+}
+
+func (s *SubScription) PullMsgs(in info) (MSGS, error) {
+	node_name := in.topicName + in.partName + in.consumer
+	s.mu.RLock()
+	node, ok := s.nodes[node_name]
+	s.mu.RUnlock()
+	if !ok {
+		logger.DEBUG(logger.DError, "this sub has not have this node(%v)\n", node_name)
+		return MSGS{}, errors.New("this sub has not have this node\n")
+	}
+	return node.ReadMSGS(in)
 }
 
 type Config struct {
