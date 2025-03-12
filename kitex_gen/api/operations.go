@@ -13303,11 +13303,11 @@ type Server_Operations interface {
 
 	AddRaftPartition(ctx context.Context, req *AddRaftPartitionRequest) (r *AddRaftPartitionResponse, err error)
 
-	CloseRaftPartition(ctx context.Context, req *CloseAcceptRequest) (r *CloseRaftPartitionResponse, err error)
+	CloseRaftPartition(ctx context.Context, req *CloseRaftPartitionRequest) (r *CloseRaftPartitionResponse, err error)
 
 	AddFetchPartition(ctx context.Context, req *AddFetchPartitionRequest) (r *AddFetchPartitionResponse, err error)
 
-	CloseFetchPartition(ctx context.Context, req *CloseAcceptRequest) (r *CloseFetchPartitionResponse, err error)
+	CloseFetchPartition(ctx context.Context, req *CloseFetchPartitionRequest) (r *CloseFetchPartitionResponse, err error)
 }
 
 type ZkServer_Operations interface {
@@ -16415,7 +16415,7 @@ func (p *Server_OperationsAddRaftPartitionResult) Field0DeepEqual(src *AddRaftPa
 }
 
 type Server_OperationsCloseRaftPartitionArgs struct {
-	Req *CloseAcceptRequest `thrift:"req,1" frugal:"1,default,CloseAcceptRequest" json:"req"`
+	Req *CloseRaftPartitionRequest `thrift:"req,1" frugal:"1,default,CloseRaftPartitionRequest" json:"req"`
 }
 
 func NewServer_OperationsCloseRaftPartitionArgs() *Server_OperationsCloseRaftPartitionArgs {
@@ -16425,15 +16425,15 @@ func NewServer_OperationsCloseRaftPartitionArgs() *Server_OperationsCloseRaftPar
 func (p *Server_OperationsCloseRaftPartitionArgs) InitDefault() {
 }
 
-var Server_OperationsCloseRaftPartitionArgs_Req_DEFAULT *CloseAcceptRequest
+var Server_OperationsCloseRaftPartitionArgs_Req_DEFAULT *CloseRaftPartitionRequest
 
-func (p *Server_OperationsCloseRaftPartitionArgs) GetReq() (v *CloseAcceptRequest) {
+func (p *Server_OperationsCloseRaftPartitionArgs) GetReq() (v *CloseRaftPartitionRequest) {
 	if !p.IsSetReq() {
 		return Server_OperationsCloseRaftPartitionArgs_Req_DEFAULT
 	}
 	return p.Req
 }
-func (p *Server_OperationsCloseRaftPartitionArgs) SetReq(val *CloseAcceptRequest) {
+func (p *Server_OperationsCloseRaftPartitionArgs) SetReq(val *CloseRaftPartitionRequest) {
 	p.Req = val
 }
 
@@ -16502,7 +16502,7 @@ ReadStructEndError:
 }
 
 func (p *Server_OperationsCloseRaftPartitionArgs) ReadField1(iprot thrift.TProtocol) error {
-	_field := NewCloseAcceptRequest()
+	_field := NewCloseRaftPartitionRequest()
 	if err := _field.Read(iprot); err != nil {
 		return err
 	}
@@ -16576,7 +16576,7 @@ func (p *Server_OperationsCloseRaftPartitionArgs) DeepEqual(ano *Server_Operatio
 	return true
 }
 
-func (p *Server_OperationsCloseRaftPartitionArgs) Field1DeepEqual(src *CloseAcceptRequest) bool {
+func (p *Server_OperationsCloseRaftPartitionArgs) Field1DeepEqual(src *CloseRaftPartitionRequest) bool {
 
 	if !p.Req.DeepEqual(src) {
 		return false
@@ -17099,7 +17099,7 @@ func (p *Server_OperationsAddFetchPartitionResult) Field0DeepEqual(src *AddFetch
 }
 
 type Server_OperationsCloseFetchPartitionArgs struct {
-	Req *CloseAcceptRequest `thrift:"req,1" frugal:"1,default,CloseAcceptRequest" json:"req"`
+	Req *CloseFetchPartitionRequest `thrift:"req,1" frugal:"1,default,CloseFetchPartitionRequest" json:"req"`
 }
 
 func NewServer_OperationsCloseFetchPartitionArgs() *Server_OperationsCloseFetchPartitionArgs {
@@ -17109,15 +17109,15 @@ func NewServer_OperationsCloseFetchPartitionArgs() *Server_OperationsCloseFetchP
 func (p *Server_OperationsCloseFetchPartitionArgs) InitDefault() {
 }
 
-var Server_OperationsCloseFetchPartitionArgs_Req_DEFAULT *CloseAcceptRequest
+var Server_OperationsCloseFetchPartitionArgs_Req_DEFAULT *CloseFetchPartitionRequest
 
-func (p *Server_OperationsCloseFetchPartitionArgs) GetReq() (v *CloseAcceptRequest) {
+func (p *Server_OperationsCloseFetchPartitionArgs) GetReq() (v *CloseFetchPartitionRequest) {
 	if !p.IsSetReq() {
 		return Server_OperationsCloseFetchPartitionArgs_Req_DEFAULT
 	}
 	return p.Req
 }
-func (p *Server_OperationsCloseFetchPartitionArgs) SetReq(val *CloseAcceptRequest) {
+func (p *Server_OperationsCloseFetchPartitionArgs) SetReq(val *CloseFetchPartitionRequest) {
 	p.Req = val
 }
 
@@ -17186,7 +17186,7 @@ ReadStructEndError:
 }
 
 func (p *Server_OperationsCloseFetchPartitionArgs) ReadField1(iprot thrift.TProtocol) error {
-	_field := NewCloseAcceptRequest()
+	_field := NewCloseFetchPartitionRequest()
 	if err := _field.Read(iprot); err != nil {
 		return err
 	}
@@ -17260,7 +17260,7 @@ func (p *Server_OperationsCloseFetchPartitionArgs) DeepEqual(ano *Server_Operati
 	return true
 }
 
-func (p *Server_OperationsCloseFetchPartitionArgs) Field1DeepEqual(src *CloseAcceptRequest) bool {
+func (p *Server_OperationsCloseFetchPartitionArgs) Field1DeepEqual(src *CloseFetchPartitionRequest) bool {
 
 	if !p.Req.DeepEqual(src) {
 		return false

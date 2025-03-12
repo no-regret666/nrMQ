@@ -210,6 +210,24 @@ func (z *ZK) UpdatePartitionNode(pnode PartitionNode) error {
 	return nil
 }
 
+func (z *ZK) UpdateBlockNode(bnode BlockNode) error {
+	path := fmt.Sprintf(BNodePath, z.TopicRoot, bnode.TopicName, bnode.PartName, bnode.Name)
+	ok, _, err := z.conn.Exists(path)
+	if !ok {
+		return err
+	}
+	data, err := json.Marshal(bnode)
+	if err != nil {
+		return err
+	}
+	_, sate, _ := z.conn.Get(path)
+	_, err = z.conn.Set(path, data, sate.Version)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (z *ZK) GetPartState(topic_name, part_name string) (PartitionNode, error) {
 	var node PartitionNode
 	path := fmt.Sprintf(PNodePath, z.TopicRoot, topic_name, part_name)

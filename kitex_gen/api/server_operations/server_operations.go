@@ -479,7 +479,7 @@ func (p *kClient) AddRaftPartition(ctx context.Context, req *api.AddRaftPartitio
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) CloseRaftPartition(ctx context.Context, req *api.CloseAcceptRequest) (r *api.CloseRaftPartitionResponse, err error) {
+func (p *kClient) CloseRaftPartition(ctx context.Context, req *api.CloseRaftPartitionRequest) (r *api.CloseRaftPartitionResponse, err error) {
 	var _args api.Server_OperationsCloseRaftPartitionArgs
 	_args.Req = req
 	var _result api.Server_OperationsCloseRaftPartitionResult
@@ -499,7 +499,7 @@ func (p *kClient) AddFetchPartition(ctx context.Context, req *api.AddFetchPartit
 	return _result.GetSuccess(), nil
 }
 
-func (p *kClient) CloseFetchPartition(ctx context.Context, req *api.CloseAcceptRequest) (r *api.CloseFetchPartitionResponse, err error) {
+func (p *kClient) CloseFetchPartition(ctx context.Context, req *api.CloseFetchPartitionRequest) (r *api.CloseFetchPartitionResponse, err error) {
 	var _args api.Server_OperationsCloseFetchPartitionArgs
 	_args.Req = req
 	var _result api.Server_OperationsCloseFetchPartitionResult

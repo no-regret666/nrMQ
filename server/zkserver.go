@@ -65,15 +65,21 @@ func (z *ZKServer) make(opt Options) {
 }
 
 func (z *ZKServer) CreateTopic(info Info_in) Info_out {
+	//可添加限制数量等操作
 	tnode := zookeeper.TopicNode{Name: info.topicName}
 	err := z.zk.RegisterNode(tnode)
 	return Info_out{Err: err}
 }
 
+// 创建Partition
 func (z *ZKServer) CreatePart(info Info_in) Info_out {
+	//可添加限制数量等操作
 	pnode := zookeeper.PartitionNode{
 		Name:      info.partName,
+		Index:     int64(1),
 		TopicName: info.topicName,
+		Option:    -2,
+		PTPoffset: int64(0),
 	}
 
 	err := z.zk.RegisterNode(pnode)
@@ -81,7 +87,20 @@ func (z *ZKServer) CreatePart(info Info_in) Info_out {
 		return Info_out{Err: err}
 	}
 
+	//创建NowBlock节点，接收信息
+	err = z.CreateNowBlock(info)
 	return Info_out{Err: err}
+}
+
+func (z *ZKServer) CreateNowBlock(info Info_in) error {
+	block_node := zookeeper.BlockNode{
+		Name:        "NowBlock",
+		FileName:    info.topicName + info.partName + "now.txt",
+		TopicName:   info.topicName,
+		PartName:    info.partName,
+		StartOffset: int64(0),
+	}
+	return z.zk.RegisterNode(block_node)
 }
 
 // 设置Partition的接收信息方式
@@ -197,6 +216,284 @@ func (z *ZKServer) SetPartitionState(info Info_in) Info_out {
 	}
 
 	//获取该partition
+	LeaderBroker, NowBlock, err := z.zk.GetPartNowBrokerNode(info.topicName, info.partName)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return Info_out{Err: err}
+	}
+	reps = z.zk.GetReplicaNodes(NowBlock.TopicName, NowBlock.PartName, NowBlock.Name)
+
+	var brokers BrokerS
+	brokers.BroBrokers = make(map[string]string)
+	brokers.RafBrokers = make(map[string]string)
+	for _, repNode := range reps {
+		BrokerNode, err := z.zk.GetBrokerNode(repNode.BrokerName)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+		}
+		brokers.BroBrokers[repNode.BrokerName] = BrokerNode.BrokHostPort
+		brokers.RafBrokers[repNode.BrokerName] = BrokerNode.RaftHostPort
+	}
+
+	data_brokers, err = json.Marshal(brokers)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return Info_out{Err: err}
+	}
+
+	switch info.option {
+	case -1:
+		if node.Option == -1 { //与原来的状态相同
+			ret = "HadRaft"
+		}
+		if node.Option == 1 || node.Option == 0 { //原状态为fetch，关闭原来的写状态，创建新raft集群
+			//查询raft集群的broker，发送信息
+			//fetch操作继续同步之前文件，创建raft集群，需要更换新文件写入
+			//调用CloseAcceptPartition更换文件
+			for ice, repNode := range reps {
+				//停止接收该Partition的信息，更换一个新文件写入信息，因为fetch机制一些信息已经写入leader
+				//但未写入follower中，更换文件从头写入，重新开启fetch机制为上一个文件同步信息
+				lastfilename := z.CloseAcceptPartition(info.topicName, info.partName, repNode.BrokerName, ice)
+
+				bro_cli, ok := z.Brokers[repNode.BrokerName]
+				if !ok {
+					logger.DEBUG(logger.DLog, "this partition(%v) leader broker is not connected\n", info.partName)
+				} else {
+					//关闭fetch机制
+					resp1, err := bro_cli.CloseFetchPartition(context.Background(), &api.CloseFetchPartitionRequest{
+						TopicName: info.topicName,
+						PartName:  info.partName,
+					})
+					if err != nil {
+						logger.DEBUG(logger.DError, "%v err(%v)\n", resp1, err.Error())
+						return Info_out{Err: err}
+					}
+
+					//重新准备接收文件
+					resp2, err := bro_cli.PrepareAccept(context.Background(), &api.PrepareAcceptRequest{
+						TopicName: info.topicName,
+						PartName:  info.partName,
+						FileName:  "NowBlock.txt",
+					})
+
+					if err != nil {
+						logger.DEBUG(logger.DError, "%v err(%v)\n", resp2, err.Error())
+						return Info_out{Err: err}
+					}
+
+					//开启raft集群
+					resp3, err := bro_cli.AddRaftPartition(context.Background(), &api.AddRaftPartitionRequest{
+						TopicName: info.topicName,
+						PartName:  info.partName,
+						Brokers:   data_brokers,
+					})
+
+					if err != nil {
+						logger.DEBUG(logger.DError, "%v err(%v)\n", resp3, err.Error())
+						return Info_out{Err: err}
+					}
+
+					//开启fetch机制，同步完上一个文件
+					resp4, err := bro_cli.AddFetchPartition(context.Background(), &api.AddFetchPartitionRequest{
+						TopicName:    info.topicName,
+						PartName:     info.partName,
+						HostPort:     LeaderBroker.BrokHostPort,
+						LeaderBroker: LeaderBroker.Name,
+						FileName:     lastfilename,
+						Brokers:      data_brokers,
+					})
+
+					if err != nil {
+						logger.DEBUG(logger.DError, "%v err(%v)\n", resp4, err.Error())
+						return Info_out{Err: err}
+					}
+				}
+			}
+		}
+	default:
+		if node.Option != -1 { //与原状态相同
+			ret = "HadFetch"
+		} else { //由raft改为fetch
+			//查询fetch的broker，发送消息
+			//关闭raft集群，开启fetch操作，不需要更换文件
+			for _, repNode := range reps {
+				//停止接收该Partition的信息，当raft被终止后broker server将不会接收该partition的信息
+				//NowBlock的文件不需要关闭接收信息，启动fetch机制后，可以继续向该文件写入信息
+				bro_cli, ok := z.Brokers[repNode.BrokerName]
+				if !ok {
+					logger.DEBUG(logger.DLog, "the partition(%v) leader broker is not connected\n", info.partName)
+				} else {
+					//关闭raft集群
+					resp1, err := bro_cli.CloseRaftPartition(context.Background(), &api.CloseRaftPartitionRequest{
+						TopicName: info.topicName,
+						PartName:  info.partName,
+					})
+					if err != nil {
+						logger.DEBUG(logger.DError, "%v err(%v)\n", resp1, err.Error())
+						return Info_out{Err: err}
+					}
+
+					//开启fetch机制
+					resp2, err := bro_cli.AddFetchPartition(context.Background(), &api.AddFetchPartitionRequest{
+						TopicName:    info.topicName,
+						PartName:     info.partName,
+						HostPort:     LeaderBroker.BrokHostPort,
+						LeaderBroker: LeaderBroker.Name,
+						FileName:     "NowBlock.txt",
+						Brokers:      data_brokers,
+					})
+
+					if err != nil {
+						logger.DEBUG(logger.DError, "%v err(%v)\n", resp2, err.Error())
+						return Info_out{Err: err}
+					}
+				}
+			}
+		}
+	}
+	return Info_out{
+		Ret: ret,
+	}
+}
+
+// 需要向每个副本都发送
+// 发送请求到broker，关闭该broker上的partition的接收程序
+// 并修改NowBlock的文件名，并修改zookeeper上的block信息
+func (z *ZKServer) CloseAcceptPartition(topicName, partName, brokerName string, ice int) string {
+	//获取新文件名
+	index, err := z.zk.GetPartBlockIndex(topicName, partName)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return err.Error()
+	}
+	NewBlockName := "Block_" + strconv.Itoa(int(index))
+	NewFileName := NewBlockName + ".txt"
+
+	z.mu.RLock()
+	bro_cli, ok := z.Brokers[brokerName]
+	if !ok {
+		logger.DEBUG(logger.DError, "broker(%v) is not connected\n", brokerName)
+	} else {
+		resp, err := bro_cli.CloseAccept(context.Background(), &api.CloseAcceptRequest{
+			TopicName:    topicName,
+			PartName:     partName,
+			Oldfilename:  "NowBlock.txt",
+			Newfilename_: NewBlockName,
+		})
+		if err != nil || !resp.Ret {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+		} else {
+			str := z.zk.TopicRoot + "/" + topicName + "/Partitions/" + partName + "/" + "NowBlock"
+			bnode, err := z.zk.GetBlockNode(str)
+			if err != nil {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+			}
+
+			if ice == 0 {
+				//创建新节点
+				z.zk.RegisterNode(zookeeper.BlockNode{
+					Name:         NewBlockName,
+					TopicName:    topicName,
+					PartName:     partName,
+					FileName:     NewFileName,
+					StartOffset:  resp.Startindex,
+					EndOffset:    resp.Endindex,
+					LeaderBroker: bnode.LeaderBroker,
+				})
+
+				//更新原NowBlock节点信息
+				z.zk.UpdateBlockNode(zookeeper.BlockNode{
+					Name:        "NowBlock",
+					TopicName:   topicName,
+					PartName:    partName,
+					FileName:    "NowBlock.txt",
+					StartOffset: resp.Endindex + 1,
+					//leader暂时未选出
+				})
+			}
+
+			//创建该节点下的各个Rep节点
+			RepPath := z.zk.TopicRoot + "/" + topicName + "/Partitions/" + partName + "/" + "NowBlock" + "/" + brokerName
+			RepNode, err := z.zk.GetReplicaNode(RepPath)
+			if err != nil {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+			}
+
+			RepNode.BlockName = NewBlockName
+
+			z.zk.RegisterNode(RepNode) //在NewBlock上创建副本节点
+		}
+	}
+	z.mu.RUnlock()
+
+	return NewFileName
+}
+
+func (z *ZKServer) GetRepsFromConsist(info Info_in) (Reps []zookeeper.ReplicaNode, data_brokers []byte) {
+	str := info.topicName + info.partName
+	Bro_reps := z.consistent.GetNode(str+"rep", 3)
+	Reps = append(Reps, zookeeper.ReplicaNode{
+		Name:        "rep_0",
+		TopicName:   info.topicName,
+		PartName:    info.partName,
+		BrokerName:  Bro_reps[0],
+		StartOffset: int64(0),
+		BlockName:   "NowBlock",
+	})
+	Reps = append(Reps, zookeeper.ReplicaNode{
+		Name:        "rep_1",
+		TopicName:   info.topicName,
+		PartName:    info.partName,
+		BrokerName:  Bro_reps[1],
+		StartOffset: int64(0),
+		BlockName:   "NowBlock",
+	})
+	Reps = append(Reps, zookeeper.ReplicaNode{
+		Name:        "rep_2",
+		TopicName:   info.topicName,
+		PartName:    info.partName,
+		BrokerName:  Bro_reps[2],
+		StartOffset: int64(0),
+		BlockName:   "NowBlock",
+	})
+
+	for _, rep := range Reps {
+		err := z.zk.RegisterNode(rep)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+		}
+	}
+
+	var brokers BrokerS
+	brokers.BroBrokers = make(map[string]string)
+	brokers.RafBrokers = make(map[string]string)
+	brokers.Me_Brokers = make(map[string]int)
+	for _, repNode := range Reps {
+		BrokerNode, err := z.zk.GetBrokerNode(repNode.BrokerName)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+		}
+		brokers.BroBrokers[repNode.BrokerName] = BrokerNode.BrokHostPort
+		brokers.RafBrokers[repNode.BrokerName] = BrokerNode.RaftHostPort
+		brokers.Me_Brokers[repNode.BrokerName] = BrokerNode.Me
+	}
+
+	data_brokers, err := json.Marshal(brokers)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+	return Reps, data_brokers
+}
+
+func (z *ZKServer) BecomeLeader(info Info_in) error {
+	logger.DEBUG(logger.DLeader, "partition(%v) new leader is %v\n", info.topicName+info.partName, info.cliName)
+	now_block_path := z.zk.TopicRoot + "/" + info.topicName + "/Partitions/" + info.partName + "/NowBlock"
+	NowBlock, err := z.zk.GetBlockNode(now_block_path)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+	NowBlock.LeaderBroker = info.cliName
+	return z.zk.UpdateBlockNode(NowBlock)
 }
 
 // producer get broker

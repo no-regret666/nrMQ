@@ -10594,7 +10594,7 @@ SkipFieldError:
 
 func (p *Server_OperationsCloseRaftPartitionArgs) FastReadField1(buf []byte) (int, error) {
 	offset := 0
-	_field := NewCloseAcceptRequest()
+	_field := NewCloseRaftPartitionRequest()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
 		return offset, err
 	} else {
@@ -10990,7 +10990,7 @@ SkipFieldError:
 
 func (p *Server_OperationsCloseFetchPartitionArgs) FastReadField1(buf []byte) (int, error) {
 	offset := 0
-	_field := NewCloseAcceptRequest()
+	_field := NewCloseFetchPartitionRequest()
 	if l, err := _field.FastRead(buf[offset:]); err != nil {
 		return offset, err
 	} else {

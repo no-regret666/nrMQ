@@ -187,9 +187,9 @@ service Server_Operations {
     PrepareSendResponse PrepareSend(1: PrepareSendRequest req)
 
     AddRaftPartitionResponse AddRaftPartition(1: AddRaftPartitionRequest req)
-    CloseRaftPartitionResponse CloseRaftPartition(1: CloseAcceptRequest req)
+    CloseRaftPartitionResponse CloseRaftPartition(1: CloseRaftPartitionRequest req)
     AddFetchPartitionResponse AddFetchPartition(1: AddFetchPartitionRequest req)
-    CloseFetchPartitionResponse CloseFetchPartition(1: CloseAcceptRequest req)
+    CloseFetchPartitionResponse CloseFetchPartition(1: CloseFetchPartitionRequest req)
 }
 
 struct CreateTopicRequest {
