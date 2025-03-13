@@ -171,6 +171,20 @@ func (s *Server) PrepareAcceptHandle(in info) (ret string, err error) {
 	return topic.PrepareAcceptHandle(in)
 }
 
+// 停止接收文件，并将文件名修改成newfilename
+// 指NowBlock中的Leader停止接收信息，副本可继续Pull信息，当EOF后关闭
+func (s *Server) CloseAcceptHandle(in info) (start, end int64, ret string, err error) {
+	s.mu.RLock()
+	topic, ok := s.topics[in.topicName]
+	if !ok {
+		ret = "this topic is not in this broker"
+		logger.DEBUG(logger.DError, "this topic(%v) is not in this broker\n", in.topicName)
+		return 0, 0, ret, errors.New(ret)
+	}
+	s.mu.RUnlock()
+	return topic.CloseAcceptPart(in)
+}
+
 func (s *Server) PrepareState(in info) (ret string, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

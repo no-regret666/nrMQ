@@ -767,3 +767,52 @@ func (c *ConsistentBro) Add(node string, power int) error {
 
 	return nil
 }
+
+func (c *ConsistentBro) SetBroHFalse() {
+	for Bro := range c.BroH {
+		c.BroH[Bro] = false
+	}
+}
+
+// return consumer name
+func (c *ConsistentBro) GetNode(key string, num int) (reps []string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.SetBroHFalse()
+
+	hash := c.hashKey(key)
+	for index := 0; index < num; index++ {
+		i := c.getPosition(hash)
+
+		broker_name := c.circle[c.hashSortedNodes[i]]
+
+		reps = append(reps, broker_name)
+
+		c.BroH[broker_name] = true
+	}
+
+	return reps
+}
+
+func (c *ConsistentBro) getPosition(hash uint32) (ret int) {
+	i := sort.Search(len(c.hashSortedNodes), func(i int) bool {
+		return c.hashSortedNodes[i] >= hash
+	})
+
+	if i < len(c.hashSortedNodes) {
+		if i == len(c.hashSortedNodes)-1 {
+			ret = 0
+		} else {
+			ret = i
+		}
+	} else {
+		ret = len(c.hashSortedNodes) - 1
+	}
+
+	for c.BroH[c.circle[c.hashSortedNodes[ret]]] {
+		ret++
+	}
+
+	return ret
+}

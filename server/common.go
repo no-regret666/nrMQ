@@ -78,13 +78,40 @@ func NewBrokerAndStart(zkinfo zookeeper.ZkInfo, opt Options) *RPCServer {
 	rpcServer := NewRPCServer(zkinfo)
 
 	go func() {
-
+		err := rpcServer.Start(opts_bro, nil, opts_raf, opt)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err)
+		}
 	}()
+
+	return &rpcServer
+}
+
+func NewZKServerAndStart(zkinfo zookeeper.ZkInfo, opt Options) *RPCServer {
+	//start the zookeeper server
+	addr_zks, _ := net.ResolveTCPAddr("tcp", opt.ZKServer_Host_Port)
+	var opts_zks []Ser.Option
+	opts_zks = append(opts_zks, Ser.WithServiceAddr(addr_zks))
+
+	rpcServer := NewRPCServer(zkinfo)
+
+	go func() {
+		err := rpcServer.Start(nil, opts_zks, nil, opt)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err)
+		}
+	}()
+
+	return &rpcServer
 }
 
 func CheckFileOrList(path string) (ret bool) {
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
+}
+
+func MovName(OldFilePath, NewFilePath string) error {
+	return os.Rename(OldFilePath, NewFilePath)
 }
 
 func CreateList(path string) error {

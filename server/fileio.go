@@ -69,6 +69,17 @@ func CheckFile(path string) (file *File, fd *os.File, Err string, err error) {
 	return file, fd, "ok", err
 }
 
+// 修改文件名
+func (f *File) Update(path, fileName string) error {
+	OldFilePath := f.filename
+	NewFilePath := path + "/" + fileName
+	f.mu.Lock()
+	f.filename = NewFilePath
+	f.mu.Unlock()
+
+	return MovName(OldFilePath, NewFilePath)
+}
+
 // 读取文件，获取该partition的最后一个index
 func (f *File) GetIndex(file *os.File) (int64, error) {
 	var node Key
@@ -136,6 +147,28 @@ func (f *File) OpenFileRead() *os.File {
 		return nil
 	}
 	return fd
+}
+
+func (f *File) GetFirstIndex(file *os.File) int64 {
+	var node Key
+	data_node := make([]byte, NODE_SIZE)
+
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+
+	_, err := file.ReadAt(data_node, 0)
+
+	if err == io.EOF {
+		//读到文件末尾
+		logger.DEBUG(logger.DLeader, "read All file,the first_index is %v\n", 0)
+		return 0
+	}
+
+	buf := &bytes.Buffer{}
+	binary.Write(buf, binary.BigEndian, data_node)
+	binary.Read(buf, binary.BigEndian, &node)
+
+	return node.End_index
 }
 
 func (f *File) FindOffset(file *os.File, index int64) (int64, error) {
