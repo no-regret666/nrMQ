@@ -138,6 +138,26 @@ func (s *RPCServer) SetPartitionState(ctx context.Context, req *api.SetPartition
 	}, nil
 }
 
+// broker---->zkserver
+func (s *RPCServer) UpdateRep(ctx context.Context, req *api.UpdateRepRequest) (r *api.UpdateRepResponse, err error) {
+	err = s.zkserver.UpdateRepNode(Info_in{
+		topicName: req.Topic,
+		partName:  req.Part,
+		cliName:   req.BrokerName,
+		blockName: req.BlockName,
+		index:     req.EndIndex,
+	})
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return &api.UpdateRepResponse{
+			Ret: false,
+		}, err
+	}
+	return &api.UpdateRepResponse{
+		Ret: true,
+	}, nil
+}
+
 // producer---->zkserver 获取该向哪个broker发送消息
 func (s *RPCServer) ProGetLeader(ctx context.Context, req *api.ProGetLeaderRequest) (r *api.ProGetLeaderResponse, err error) {
 	info := s.zkserver.ProGetLeader(Info_in{
@@ -286,6 +306,23 @@ func (s *RPCServer) Pull(ctx context.Context, req *api.PullRequest) (r *api.Pull
 	}, nil
 }
 
+func (s *RPCServer) UpdatePTPOffset(ctx context.Context, req *api.UpdatePTPOffsetRequest) (r *api.UpdatePTPOffsetResponse, err error) {
+	err = s.server.UpdatePTPOffset(Info_in{
+		topicName: req.Topic,
+		partName:  req.Part,
+		index:     req.Offset,
+	})
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return &api.UpdatePTPOffsetResponse{
+			Ret: false,
+		}, err
+	}
+	return &api.UpdatePTPOffsetResponse{
+		Ret: false,
+	}, nil
+}
+
 func (s *RPCServer) Sub(ctx context.Context, req *api.SubRequest) (r *api.SubResponse, err error) {
 	err = s.zkserver.SubHandle(Info_in{
 		cliName:   req.Consumer,
@@ -388,12 +425,89 @@ func (s *RPCServer) BroInfo(ctx context.Context, req *api.BroInfoRequest) (r *ap
 	}, nil
 }
 
-func (s *RPCServer) UpdateRep(ctx context.Context, req *api.UpdateRepRequest) (r *api.UpdateRepResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+func (s *RPCServer) AddRaftPartition(ctx context.Context, req *api.AddRaftPartitionRequest) (r *api.AddRaftPartitionResponse, err error) {
+	var brokers BrokerS
+	json.Unmarshal(req.Brokers, &brokers)
+
+	logger.DEBUG(logger.DLog, "the brokers in rpc is %v\n", req.Brokers)
+	logger.DEBUG(logger.DLog, "Unmarshal brokers is %v\n", brokers.RafBrokers)
+
+	ret, err := s.server.AddRaftHandle(info{
+		topicName: req.TopicName,
+		partName:  req.PartName,
+		brokers:   brokers.RafBrokers,
+		brok_me:   brokers.Me_Brokers,
+	})
+	if err != nil {
+		return &api.AddRaftPartitionResponse{
+			Ret: false,
+			Err: ret,
+		}, err
+	}
+
+	return &api.AddRaftPartitionResponse{
+		Ret: true,
+		Err: ret,
+	}, nil
 }
 
-func (s *RPCServer) UpdatePTPOffset(ctx context.Context, req *api.UpdatePTPOffsetRequest) (r *api.UpdatePTPOffsetResponse, err error) {
-	//TODO implement me
-	panic("implement me")
+func (s *RPCServer) CloseRaftPartition(ctx context.Context, req *api.CloseRaftPartitionRequest) (r *api.CloseRaftPartitionResponse, err error) {
+	ret, err := s.server.CloseRaftHandle(info{
+		topicName: req.TopicName,
+		partName:  req.PartName,
+	})
+	if err != nil {
+		return &api.CloseRaftPartitionResponse{
+			Ret: false,
+			Err: ret,
+		}, err
+	}
+
+	return &api.CloseRaftPartitionResponse{
+		Ret: true,
+		Err: ret,
+	}, nil
+}
+
+func (s *RPCServer) AddFetchPartition(ctx context.Context, req *api.AddFetchPartitionRequest) (r *api.AddFetchPartitionResponse, err error) {
+	var brokers BrokerS
+	json.Unmarshal(req.Brokers, &brokers)
+
+	ret, err := s.server.AddFetchHandle(info{
+		topicName:    req.TopicName,
+		partName:     req.PartName,
+		LeaderBroker: req.LeaderBroker,
+		HostPort:     req.HostPort,
+		brokers:      brokers.BroBrokers,
+		fileName:     req.FileName,
+	})
+	if err != nil {
+		return &api.AddFetchPartitionResponse{
+			Ret: false,
+			Err: ret,
+		}, err
+	}
+
+	return &api.AddFetchPartitionResponse{
+		Ret: true,
+		Err: ret,
+	}, nil
+}
+
+func (s *RPCServer) CloseFetchPartition(ctx context.Context, req *api.CloseFetchPartitionRequest) (r *api.CloseFetchPartitionResponse, err error) {
+	ret, err := s.server.CloseFetchHandle(info{
+		topicName: req.TopicName,
+		partName:  req.PartName,
+	})
+	if err != nil {
+		return &api.CloseFetchPartitionResponse{
+			Ret: false,
+			Err: ret,
+		}, err
+	}
+
+	return &api.CloseFetchPartitionResponse{
+		Ret: true,
+		Err: ret,
+	}, nil
 }

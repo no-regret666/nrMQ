@@ -72,7 +72,7 @@ type info struct {
 
 	//raft
 	brokers map[string]string
-	bro_me  map[string]int
+	brok_me map[string]int
 	me      int
 
 	//fetch

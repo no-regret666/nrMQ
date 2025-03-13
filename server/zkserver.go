@@ -816,3 +816,53 @@ func (c *ConsistentBro) getPosition(hash uint32) (ret int) {
 
 	return ret
 }
+
+func (z *ZKServer) UpdateRepNode(info Info_in) error {
+	str := z.zk.TopicRoot + "/" + info.topicName + "/Partitions/" + info.partName + "/" + info.blockName
+	BlockNode, err := z.zk.GetBlockNode(str)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return err
+	}
+	if info.index > BlockNode.EndOffset {
+		BlockNode.EndOffset = info.index
+		err = z.zk.RegisterNode(BlockNode)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+			return err
+		}
+	}
+
+	RepNode, err := z.zk.GetReplicaNode(str + "/" + info.cliName)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return err
+	}
+	RepNode.EndOffset = info.index
+	err = z.zk.RegisterNode(RepNode)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return err
+	}
+	return nil
+}
+
+// 修改Offset
+func (z *ZKServer) UpdatePTPOffset(info Info_in) error {
+	str := z.zk.TopicRoot + "/" + info.topicName + "/Partitions/" + info.partName
+	node, err := z.zk.GetPartitionNode(str)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return err
+	}
+
+	err = z.zk.UpdatePartitionNode(zookeeper.PartitionNode{
+		Name:      info.partName,
+		TopicName: info.topicName,
+		Index:     node.Index,
+		Option:    node.Option,
+		RepNum:    node.RepNum,
+		PTPoffset: info.index,
+	})
+	return err
+}
