@@ -20,6 +20,8 @@ type Client interface {
 	BroInfo(ctx context.Context, req *api.BroInfoRequest, callOptions ...callopt.Option) (r *api.BroInfoResponse, err error)
 	UpdateRep(ctx context.Context, req *api.UpdateRepRequest, callOptions ...callopt.Option) (r *api.UpdateRepResponse, err error)
 	UpdatePTPOffset(ctx context.Context, req *api.UpdatePTPOffsetRequest, callOptions ...callopt.Option) (r *api.UpdatePTPOffsetResponse, err error)
+	BecomeLeader(ctx context.Context, req *api.BecomeLeaderRequest, callOptions ...callopt.Option) (r *api.BecomeLeaderResponse, err error)
+	GetNewLeader(ctx context.Context, req *api.GetNewLeaderRequest, callOptions ...callopt.Option) (r *api.GetNewLeaderResponse, err error)
 }
 
 // NewClient creates a client for the service defined in IDL.
@@ -94,4 +96,14 @@ func (p *kZkServer_OperationsClient) UpdateRep(ctx context.Context, req *api.Upd
 func (p *kZkServer_OperationsClient) UpdatePTPOffset(ctx context.Context, req *api.UpdatePTPOffsetRequest, callOptions ...callopt.Option) (r *api.UpdatePTPOffsetResponse, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
 	return p.kClient.UpdatePTPOffset(ctx, req)
+}
+
+func (p *kZkServer_OperationsClient) BecomeLeader(ctx context.Context, req *api.BecomeLeaderRequest, callOptions ...callopt.Option) (r *api.BecomeLeaderResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.BecomeLeader(ctx, req)
+}
+
+func (p *kZkServer_OperationsClient) GetNewLeader(ctx context.Context, req *api.GetNewLeaderRequest, callOptions ...callopt.Option) (r *api.GetNewLeaderResponse, err error) {
+	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	return p.kClient.GetNewLeader(ctx, req)
 }

@@ -291,6 +291,28 @@ struct UpdatePTPOffsetResponse {
     1: bool ret
 }
 
+struct BecomeLeaderRequest {
+    1: string Broker
+    2: string Topic
+    3: string Partition
+}
+
+struct BecomeLeaderResponse {
+    1: bool ret
+}
+
+struct GetNewLeaderRequest {
+    1: string TopicName
+    2: string PartName
+    3: string BlockName
+}
+
+struct GetNewLeaderResponse {
+    1: bool Ret
+    2: string LeaderBroker
+    3: string HostPort
+}
+
 service ZkServer_Operations {
     //produce
     CreateTopicResponse CreateTopic(1: CreateTopicRequest req)
@@ -307,6 +329,10 @@ service ZkServer_Operations {
     //broker更新topic-partition的offset
     UpdateRepResponse UpdateRep(1: UpdateRepRequest req)
     UpdatePTPOffsetResponse UpdatePTPOffset(1: UpdatePTPOffsetRequest req)
+    //broker成为新的leader
+    BecomeLeaderResponse BecomeLeader(1: BecomeLeaderRequest req)
+    //broker获取新的leader
+    GetNewLeaderResponse GetNewLeader(1: GetNewLeaderRequest req)
 }
 
 struct PubRequest {

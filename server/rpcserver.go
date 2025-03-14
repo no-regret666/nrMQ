@@ -307,7 +307,7 @@ func (s *RPCServer) Pull(ctx context.Context, req *api.PullRequest) (r *api.Pull
 }
 
 func (s *RPCServer) UpdatePTPOffset(ctx context.Context, req *api.UpdatePTPOffsetRequest) (r *api.UpdatePTPOffsetResponse, err error) {
-	err = s.server.UpdatePTPOffset(Info_in{
+	err = s.zkserver.UpdatePTPOffset(Info_in{
 		topicName: req.Topic,
 		partName:  req.Part,
 		index:     req.Offset,

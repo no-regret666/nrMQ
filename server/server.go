@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/server"
@@ -14,6 +15,7 @@ import (
 	"nrMQ/zookeeper"
 	"os"
 	"sync"
+	"time"
 )
 
 const (
@@ -153,6 +155,22 @@ func (s *Server) CheckList() {
 	}
 }
 
+func (s *Server) PrepareState(in info) (ret string, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	switch in.option {
+	case -1:
+		ok := s.parts_rafts.CheckPartState(in.topicName, in.partName)
+		if !ok {
+			ret = "the raft not exists"
+			err = errors.New(ret)
+		}
+	default:
+
+	}
+	return ret, err
+}
+
 // 准备接收信息
 // 检查topic和partition是否存在，不存在则需要创建
 // 设置partition中的file和fd,start_index等信息
@@ -185,20 +203,157 @@ func (s *Server) CloseAcceptHandle(in info) (start, end int64, ret string, err e
 	return topic.CloseAcceptPart(in)
 }
 
-func (s *Server) PrepareState(in info) (ret string, err error) {
+// PrepareSendHandle 准备发送消息
+// 检查topic和subscription是否存在，不存在则需要创建
+// 检查该文件的config是否存在，不存在则创建，并开启线程
+// 协程设置超时时间，时间到则关闭
+func (s *Server) PrepareSendHandle(in info) (ret string, err error) {
+	//检查或创建topic
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	switch in.option {
-	case -1:
-		ok := s.parts_rafts.CheckPartState(in.topicName, in.partName)
-		if !ok {
-			ret = "the raft not exists"
-			err = errors.New(ret)
-		}
-	default:
+	topic, ok := s.topics[in.topicName]
+	if !ok {
+		logger.DEBUG(logger.DLog, "%v not have topic(%v),create topic\n", s.Name, in.topicName)
+		topic = NewTopic(s.Name, in.topicName)
+		s.topics[in.topicName] = topic
+	}
+	s.mu.Unlock()
 
+	//检查或创建partition
+	return topic.PrepareSendHandle(in, &s.zkclient)
+}
+
+func (s *Server) AddRaftHandle(in info) (ret string, err error) {
+	//检测该Partition的Raft是否已经启动
+	s.mu.Lock()
+	index := 0
+	nodes := make(map[int]string)
+	for k, v := range in.brok_me {
+		nodes[v] = k
+	}
+
+	var peers []*raft_operations.Client
+	for index < len(in.brokers) {
+		logger.DEBUG(logger.DLog, "%v index (%v) Me(%v) k(%v) == Name(%v)\n", s.Name, index, index, nodes[index], s.Name)
+		bro_cli, ok := s.brokers[nodes[index]]
+		if !ok {
+			cli, err := raft_operations.NewClient(s.Name, client.WithHostPorts(in.brokers[nodes[index]]))
+			if err != nil {
+				logger.DEBUG(logger.DError, "%v new raft client fail err %v\n", s.Name, err.Error())
+				return ret, err
+			}
+			s.brokers[nodes[index]] = &cli
+			bro_cli = &cli
+			logger.DEBUG(logger.DLog, "%v new client to broker %v\n", s.Name, nodes[index])
+		} else {
+			logger.DEBUG(logger.DLog, "%v new client to broker %v\n", s.Name, nodes[index])
+		}
+		peers = append(peers, bro_cli)
+		index++
+	}
+
+	logger.DEBUG(logger.DLog, "the Broker %v raft Me %v\n", s.Name, s.me)
+	//检查或创建底层part_raft
+	s.parts_rafts.AddPart_Raft(peers, s.me, in.topicName, in.partName)
+
+	s.mu.Unlock()
+
+	logger.DEBUG(logger.DLog, "the %v add over\n", s.Name)
+
+	return ret, err
+}
+
+func (s *Server) CloseRaftHandle(in info) (ret string, err error) {
+	s.mu.RLock()
+	err = s.parts_rafts.DeletePart_raft(in.topicName, in.partName)
+	s.mu.RUnlock()
+	if err != nil {
+		return err.Error(), err
 	}
 	return ret, err
+}
+
+func (s *Server) AddFetchHandle(in info) (ret string, err error) {
+	//检查该Partition的fetch机制是否已经启动
+
+	//检查该topic_partition是否准备好accept信息
+	ret, err = s.PrepareAcceptHandle(in)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v err is %v\n", ret, err)
+		return ret, err
+	}
+
+	if in.LeaderBroker == s.Name {
+		//Leader Broker将准备好接收follower的Pull请求
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		topic, ok := s.topics[in.topicName]
+		if !ok {
+			ret := "this topic is not in this broker"
+			logger.DEBUG(logger.DError, "%v,info(%v)\n", ret, in)
+			return ret, errors.New(ret)
+		}
+		logger.DEBUG(logger.DLog, "%v prepare send for follower brokers\n", s.Name)
+		//给每个follower broker准备node(PSB_PULL),等待pull请求
+		for BrokerName := range in.brokers {
+			ret, err = topic.PrepareSendHandle(info{
+				topicName: in.topicName,
+				partName:  in.partName,
+				fileName:  in.fileName,
+				consumer:  BrokerName,
+				option:    TOPIC_KEY_PSB_PULL, //PSB_PULL
+			}, &s.zkclient)
+			if err != nil {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+			}
+		}
+		return ret, err
+	} else {
+		time.Sleep(time.Microsecond * 100)
+		str := in.topicName + in.partName + in.fileName
+		s.mu.Lock()
+		broker, ok := s.brokers_fetch[in.LeaderBroker]
+		if !ok {
+			logger.DEBUG(logger.DLog, "%v connection the leader broker %v the HP(%v)\n", s.Name, in.LeaderBroker, in.HostPort)
+			bro_ptr, err := server_operations.NewClient(s.Name, client.WithHostPorts(in.HostPort))
+			if err != nil {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+				return err.Error(), err
+			}
+			s.brokers_fetch[in.LeaderBroker] = &bro_ptr
+			broker = &bro_ptr
+		}
+
+		_, ok = s.parts_fetch[str]
+		if !ok {
+			s.parts_fetch[str] = in.LeaderBroker
+		}
+		topic, ok := s.topics[in.topicName]
+		if !ok {
+			ret := "this topic is not in this broker"
+			logger.DEBUG(logger.DLog, "%v,info(%v)\n", ret, in)
+			return ret, errors.New(ret)
+		}
+		s.mu.Unlock()
+
+		return s.FetchMsg(in, broker, topic)
+	}
+}
+
+func (s *Server) CloseFetchHandle(in info) (ret string, err error) {
+	str := in.topicName + in.partName + in.fileName
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, ok := s.parts_fetch[str]
+	if !ok {
+		ret := "this topic-partition is not in this broker"
+		logger.DEBUG(logger.DError, "this topic(%v)-partition(%v) is not in this broker\n", in.topicName, in.partName)
+		return ret, errors.New(ret)
+	} else {
+		//关闭NowBlock的fetch机制，将NowBlock更改，需要重新为之前的Block开启fetch机制
+		//直到EOF退出
+		delete(s.parts_fetch, str)
+		return ret, err
+	}
 }
 
 // start到该partition中的raft集群中
@@ -291,25 +446,6 @@ func (s *Server) CheckConsumer(client *Client) {
 	}
 }
 
-// PrepareSendHandle 准备发送消息
-// 检查topic和subscription是否存在，不存在则需要创建
-// 检查该文件的config是否存在，不存在则创建，并开启线程
-// 协程设置超时时间，时间到则关闭
-func (s *Server) PrepareSendHandle(in info) (ret string, err error) {
-	//检查或创建topic
-	s.mu.Lock()
-	topic, ok := s.topics[in.topicName]
-	if !ok {
-		logger.DEBUG(logger.DLog, "%v not have topic(%v),create topic\n", s.Name, in.topicName)
-		topic = NewTopic(s.Name, in.topicName)
-		s.topics[in.topicName] = topic
-	}
-	s.mu.Unlock()
-
-	//检查或创建partition
-	return topic.PrepareSendHandle(in, &s.zkclient)
-}
-
 // PullHandle
 // Pull message
 func (s *Server) PullHandle(in info) (MSGS, error) {
@@ -332,4 +468,194 @@ func (s *Server) PullHandle(in info) (MSGS, error) {
 	}
 
 	return topic.PullMessage(in)
+}
+
+// 主动向leader pull信息，当获取信息失败后将询问zkserver，新的leader
+func (s *Server) FetchMsg(in info, cli *server_operations.Client, topic *Topic) (ret string, err error) {
+	//向zkserver请求向leader Broker Pull信息
+	//向LeaderBroker发起Pull请求
+	//获得本地当前文件end_index
+	File, fd := topic.GetFile(in)
+	index := File.Getindex(fd)
+	index += 1
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return err.Error(), err
+	}
+
+	logger.DEBUG(logger.DLog2, "the cli is %v\n", cli)
+
+	if in.fileName != "Nowfile.txt" {
+		//当文件名不为nowfile时
+		//创建一partition，并向该File中写入内容
+
+		go func() {
+			Partition := NewPartition(s.Name, in.topicName, in.partName)
+			Partition.StartGetMessage(File, fd, in)
+			ice := 0
+
+			for {
+				resp, err := (*cli).Pull(context.Background(), &api.PullRequest{
+					Consumer: s.Name,
+					Topic:    in.topicName,
+					Key:      in.partName,
+					Offset:   index,
+					Size:     10,
+					Option:   TOPIC_KEY_PSB_PULL,
+				})
+				num := len(in.fileName)
+				if err != nil {
+					ice++
+					logger.DEBUG(logger.DError, "Err %v,err(%v)\n", resp, err.Error())
+
+					if ice >= 3 {
+						time.Sleep(time.Second * 3)
+						//询问新的Leader
+						resp, err := s.zkclient.GetNewLeader(context.Background(), &api.GetNewLeaderRequest{
+							TopicName: in.topicName,
+							PartName:  in.partName,
+							BlockName: in.fileName[:num-4],
+						})
+						if err != nil {
+							logger.DEBUG(logger.DError, "%v\n", err.Error())
+						}
+						s.mu.Lock()
+						_, ok := s.brokers_fetch[in.topicName+in.partName]
+						if !ok {
+							logger.DEBUG(logger.DLog, "this broker (%v) is not connected\n", s.Name)
+							leader_bro, err := server_operations.NewClient(s.Name, client.WithHostPorts(resp.HostPort))
+							if err != nil {
+								logger.DEBUG(logger.DError, "%v\n", err.Error())
+								return
+							}
+							s.brokers_fetch[resp.LeaderBroker] = &leader_bro
+							cli = &leader_bro
+						}
+						s.mu.Unlock()
+					}
+					continue
+				}
+				if resp.Err == "file EOF" {
+					logger.DEBUG(logger.DLog, "This partition(%d) filename(%d) is over\n", in.partName, in.fileName)
+					fd.Close()
+					return
+				}
+				ice = 0
+
+				if resp.StartIndex <= index && resp.EndIndex > index {
+					//index处于返回包的中间位置
+					//需要截断该包，并写入
+					//your code
+					logger.DEBUG(logger.DLog, "need your code\n")
+				}
+				node := Key{
+					Start_index: resp.StartIndex,
+					End_index:   resp.EndIndex,
+					Size:        int64(len(resp.Msgs)),
+				}
+
+				File.WriteFile(fd, node, resp.Msgs)
+				index = resp.EndIndex + 1
+				s.zkclient.UpdateRep(context.Background(), &api.UpdateRepRequest{
+					Topic:      in.topicName,
+					Part:       in.partName,
+					BrokerName: s.Name,
+					BlockName:  GetBlockName(in.fileName),
+					EndIndex:   resp.EndIndex,
+				})
+			}
+		}()
+	} else {
+		//当文件名为nowfile时
+		//zkserver已经让该broker准备接收文件
+		//直接调用addMessage
+
+		go func() {
+			fd.Close()
+			s.mu.RLock()
+			topic, ok := s.topics[in.topicName]
+			s.mu.RUnlock()
+			if !ok {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+			}
+			ice := 0
+			for {
+				s.mu.RLock()
+				_, ok := s.parts_fetch[in.topicName+in.partName+in.fileName]
+				s.mu.RUnlock()
+				if !ok {
+					logger.DEBUG(logger.DLog, "this topic(%v)-partition(%v) is not in this broker\n", in.topicName, in.partName)
+					return
+				}
+
+				resp, err := (*cli).Pull(context.Background(), &api.PullRequest{
+					Consumer: s.Name,
+					Topic:    in.topicName,
+					Key:      in.partName,
+					Offset:   in.offset,
+					Size:     10,
+					Option:   TOPIC_KEY_PSB_PULL,
+				})
+
+				if err != nil {
+					ice++
+					logger.DEBUG(logger.DError, "Err %v,err(%v)\n", resp.Err, err.Error())
+
+					if ice >= 3 {
+						resp, err := s.zkclient.GetNewLeader(context.Background(), &api.GetNewLeaderRequest{
+							TopicName: in.topicName,
+							PartName:  in.partName,
+							BlockName: "NowBlock",
+						})
+						if err != nil {
+							logger.DEBUG(logger.DError, "%v\n", err.Error())
+						}
+						s.mu.Lock()
+						_, ok := s.brokers_fetch[in.topicName+in.partName]
+						if !ok {
+							logger.DEBUG(logger.DLog, "this broker (%v) is not connected\n", s.Name)
+							leader_bro, err := server_operations.NewClient(s.Name, client.WithHostPorts(resp.HostPort))
+							if err != nil {
+								logger.DEBUG(logger.DError, "%v\n", err.Error())
+								return
+							}
+							s.brokers_fetch[resp.LeaderBroker] = &leader_bro
+							cli = &leader_bro
+						}
+						s.mu.Unlock()
+					}
+					continue
+				}
+				ice = 0
+
+				if resp.Size == 0 {
+					//等待新消息的生产
+					time.Sleep(time.Second * 10)
+				} else {
+					msgs := make([]Message, resp.Size)
+					json.Unmarshal(resp.Msgs, &msgs)
+
+					start_index := resp.StartIndex
+					for _, msg := range msgs {
+						if index == start_index {
+							err := topic.addMessage(info{
+								topicName:  in.topicName,
+								partName:   in.partName,
+								size:       msg.Size,
+								message:    msg.Msg,
+								BrokerName: s.Name,
+								zkclient:   &s.zkclient,
+								fileName:   "NowBlock.txt",
+							})
+							if err != nil {
+								logger.DEBUG(logger.DError, "%v\n", err.Error())
+							}
+						}
+						index++
+					}
+				}
+			}
+		}()
+	}
+	return ret, err
 }

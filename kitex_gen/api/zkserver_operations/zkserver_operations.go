@@ -76,6 +76,20 @@ var serviceMethods = map[string]kitex.MethodInfo{
 		false,
 		kitex.WithStreamingMode(kitex.StreamingNone),
 	),
+	"BecomeLeader": kitex.NewMethodInfo(
+		becomeLeaderHandler,
+		newZkServer_OperationsBecomeLeaderArgs,
+		newZkServer_OperationsBecomeLeaderResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
+	"GetNewLeader": kitex.NewMethodInfo(
+		getNewLeaderHandler,
+		newZkServer_OperationsGetNewLeaderArgs,
+		newZkServer_OperationsGetNewLeaderResult,
+		false,
+		kitex.WithStreamingMode(kitex.StreamingNone),
+	),
 }
 
 var (
@@ -304,6 +318,42 @@ func newZkServer_OperationsUpdatePTPOffsetResult() interface{} {
 	return api.NewZkServer_OperationsUpdatePTPOffsetResult()
 }
 
+func becomeLeaderHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.ZkServer_OperationsBecomeLeaderArgs)
+	realResult := result.(*api.ZkServer_OperationsBecomeLeaderResult)
+	success, err := handler.(api.ZkServer_Operations).BecomeLeader(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newZkServer_OperationsBecomeLeaderArgs() interface{} {
+	return api.NewZkServer_OperationsBecomeLeaderArgs()
+}
+
+func newZkServer_OperationsBecomeLeaderResult() interface{} {
+	return api.NewZkServer_OperationsBecomeLeaderResult()
+}
+
+func getNewLeaderHandler(ctx context.Context, handler interface{}, arg, result interface{}) error {
+	realArg := arg.(*api.ZkServer_OperationsGetNewLeaderArgs)
+	realResult := result.(*api.ZkServer_OperationsGetNewLeaderResult)
+	success, err := handler.(api.ZkServer_Operations).GetNewLeader(ctx, realArg.Req)
+	if err != nil {
+		return err
+	}
+	realResult.Success = success
+	return nil
+}
+func newZkServer_OperationsGetNewLeaderArgs() interface{} {
+	return api.NewZkServer_OperationsGetNewLeaderArgs()
+}
+
+func newZkServer_OperationsGetNewLeaderResult() interface{} {
+	return api.NewZkServer_OperationsGetNewLeaderResult()
+}
+
 type kClient struct {
 	c client.Client
 }
@@ -399,6 +449,26 @@ func (p *kClient) UpdatePTPOffset(ctx context.Context, req *api.UpdatePTPOffsetR
 	_args.Req = req
 	var _result api.ZkServer_OperationsUpdatePTPOffsetResult
 	if err = p.c.Call(ctx, "UpdatePTPOffset", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) BecomeLeader(ctx context.Context, req *api.BecomeLeaderRequest) (r *api.BecomeLeaderResponse, err error) {
+	var _args api.ZkServer_OperationsBecomeLeaderArgs
+	_args.Req = req
+	var _result api.ZkServer_OperationsBecomeLeaderResult
+	if err = p.c.Call(ctx, "BecomeLeader", &_args, &_result); err != nil {
+		return
+	}
+	return _result.GetSuccess(), nil
+}
+
+func (p *kClient) GetNewLeader(ctx context.Context, req *api.GetNewLeaderRequest) (r *api.GetNewLeaderResponse, err error) {
+	var _args api.ZkServer_OperationsGetNewLeaderArgs
+	_args.Req = req
+	var _result api.ZkServer_OperationsGetNewLeaderResult
+	if err = p.c.Call(ctx, "GetNewLeader", &_args, &_result); err != nil {
 		return
 	}
 	return _result.GetSuccess(), nil
