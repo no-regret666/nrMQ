@@ -146,6 +146,42 @@ func (s *Server) Make(opt Options, opt_cli []server.Option) {
 	go s.GetApplych(s.aplych)
 }
 
+// 接收applych管道的内容
+// 写入partition文件中
+func (s *Server) GetApplych(aplych chan info) {
+	for msg := range s.aplych {
+		if msg.producer == "Leader" {
+			s.BecomeLeader(msg) //成为leader
+		} else {
+			s.mu.RLock()
+			topic, ok := s.topics[msg.topicName]
+			s.mu.RUnlock()
+
+			logger.DEBUG(logger.DLog, "%d the message from applych is %v\n", s.me, msg)
+			if !ok {
+				logger.DEBUG(logger.DError, "topic(%v) is not in this broker\n", msg.topicName)
+			} else {
+				msg.me = s.me
+				msg.BrokerName = s.Name
+				msg.zkclient = &s.zkclient
+				msg.fileName = "NowBlock.txt"
+				topic.addMessage(msg) //信息同步
+			}
+		}
+	}
+}
+
+func (s *Server) BecomeLeader(in info) {
+	resp, err := s.zkclient.BecomeLeader(context.Background(), &api.BecomeLeaderRequest{
+		Broker:    s.Name,
+		Topic:     in.topicName,
+		Partition: in.partName,
+	})
+	if err != nil || !resp.Ret {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+}
+
 func (s *Server) CheckList() {
 	str, _ := os.Getwd()
 	str += "/" + s.Name
