@@ -201,6 +201,26 @@ func (t *Topic) HandleStartToGet(sub_name string, in info, cli *client_operation
 	return nil
 }
 
+func (t *Topic) GetFile(in info) (File *File, Fd *os.File) {
+	t.mu.RLock()
+	str, _ := os.Getwd()
+	str += "/" + t.Broker + "/" + in.topicName + "/" + in.partName + "/" + in.fileName
+	file, ok := t.Files[str]
+	if !ok {
+		file, fd, Err, err := NewFile(str)
+		if err != nil {
+			logger.DEBUG(logger.DError, "Err(%v),err(%v)\n", Err, err.Error())
+			return nil, nil
+		}
+		Fd = fd
+		t.Files[str] = file
+	} else {
+		Fd = file.OpenFileRead()
+	}
+	t.mu.RUnlock()
+	return file, Fd
+}
+
 func (t *Topic) PullMessage(in info) (MSGS, error) {
 	logger.DEBUG(logger.DLog, "the info %v\n", in)
 	sub_name := GetStringfromSub(in.topicName, in.partName, in.option)
@@ -267,7 +287,7 @@ func (p *Partition) StartGetMessage(file *File, fd *os.File, in info) string {
 		p.file = file
 		p.fd = fd
 		p.file_name = in.fileName
-		p.index, _ = file.GetIndex(fd)
+		p.index = file.GetIndex(fd)
 		p.start_index = p.index
 		ret = OK
 	}

@@ -511,3 +511,42 @@ func (s *RPCServer) CloseFetchPartition(ctx context.Context, req *api.CloseFetch
 		Err: ret,
 	}, nil
 }
+
+// broker---->zkserver
+func (s *RPCServer) BecomeLeader(ctx context.Context, req *api.BecomeLeaderRequest) (r *api.BecomeLeaderResponse, err error) {
+	err = s.zkserver.BecomeLeader(Info_in{
+		cliName:   req.Broker,
+		topicName: req.Topic,
+		partName:  req.Partition,
+	})
+	if err != nil {
+		return &api.BecomeLeaderResponse{
+			Ret: false,
+		}, err
+	} else {
+		return &api.BecomeLeaderResponse{
+			Ret: true,
+		}, nil
+	}
+}
+
+// consumer and producer ----> zkserver
+func (s *RPCServer) GetNewLeader(ctx context.Context, req *api.GetNewLeaderRequest) (r *api.GetNewLeaderResponse, err error) {
+	info, err := s.zkserver.GetNewLeader(Info_in{
+		topicName: req.TopicName,
+		partName:  req.PartName,
+		blockName: req.BlockName,
+	})
+
+	if err != nil {
+		return &api.GetNewLeaderResponse{
+			Ret: false,
+		}, err
+	} else {
+		return &api.GetNewLeaderResponse{
+			Ret:          true,
+			LeaderBroker: info.brokerName,
+			HostPort:     info.broHostPort,
+		}, nil
+	}
+}

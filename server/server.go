@@ -473,10 +473,11 @@ func (s *Server) PullHandle(in info) (MSGS, error) {
 // 主动向leader pull信息，当获取信息失败后将询问zkserver，新的leader
 func (s *Server) FetchMsg(in info, cli *server_operations.Client, topic *Topic) (ret string, err error) {
 	//向zkserver请求向leader Broker Pull信息
+
 	//向LeaderBroker发起Pull请求
 	//获得本地当前文件end_index
 	File, fd := topic.GetFile(in)
-	index := File.Getindex(fd)
+	index := File.GetIndex(fd)
 	index += 1
 	if err != nil {
 		logger.DEBUG(logger.DError, "%v\n", err.Error())

@@ -866,3 +866,59 @@ func (z *ZKServer) UpdatePTPOffset(info Info_in) error {
 	})
 	return err
 }
+
+func (z *ZKServer) GetNewLeader(info Info_in) (Info_out, error) {
+	block_path := z.zk.TopicRoot + "/" + info.topicName + "/Partitions/" + info.partName + "/" + info.blockName
+	logger.DEBUG(logger.DLog, "get new leader broker the path is %v\n", block_path)
+	BlockNode, err := z.zk.GetBlockNode(block_path)
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+	}
+	var leaderBroker zookeeper.BrokerNode
+	//需要检查Leader是否在线，若不在线需要更换leader
+	logger.DEBUG(logger.DLog, "zkserver checkout leader broker %v online?\n", BlockNode.LeaderBroker)
+	ret := z.zk.CheckBroker(BlockNode.LeaderBroker)
+	if ret {
+		leaderBroker, err = z.zk.GetBrokerNode(BlockNode.LeaderBroker)
+		if err != nil {
+			logger.DEBUG(logger.DError, "%v\n", err.Error())
+		}
+	} else {
+		//检查副本中谁的最新，再次检查
+		var array []struct {
+			EndIndex   int64
+			BrokerName string
+		}
+		Reps := z.zk.GetReplicaNodes(info.topicName, info.partName, info.blockName)
+		for _, rep := range Reps {
+			ret = z.zk.CheckBroker(rep.BrokerName)
+			if ret {
+				//根据EndIndex的大小排序
+				array = append(array, struct {
+					EndIndex   int64
+					BrokerName string
+				}{rep.EndOffset, rep.BrokerName})
+			}
+		}
+
+		sort.SliceStable(array, func(i, j int) bool {
+			return array[i].EndIndex > array[j].EndIndex
+		})
+
+		for _, arr := range array {
+			leaderBroker, err = z.zk.GetBrokerNode(arr.BrokerName)
+			if err != nil {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+			}
+			ret = z.zk.CheckBroker(arr.BrokerName)
+			if ret {
+				break
+			}
+		}
+	}
+
+	return Info_out{
+		brokerName:  leaderBroker.Name,
+		broHostPort: leaderBroker.BrokHostPort,
+	}, nil
+}

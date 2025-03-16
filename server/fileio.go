@@ -81,34 +81,34 @@ func (f *File) Update(path, fileName string) error {
 }
 
 // 读取文件，获取该partition的最后一个index
-func (f *File) GetIndex(file *os.File) (int64, error) {
+func (f *File) GetIndex(file *os.File) int64 {
 	var node Key
-	var offset int64
-	dataNode := make([]byte, NODE_SIZE)
-
+	var index, offset int64
+	index = -1
+	offset = 0
+	data_node := make([]byte, NODE_SIZE)
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 
 	for {
-		//从文件中读取数据块
-		n, err := file.ReadAt(dataNode, offset)
-		if err != nil {
-			if err == io.EOF {
-				//读到文件末尾，返回最后一个End_index
-				return node.End_index, nil
+		_, err := file.ReadAt(data_node, offset)
+
+		if err == io.EOF {
+			//读到文件末尾
+			if index == 0 {
+				index = node.End_index
+			} else {
+				index = 0
 			}
-			//其他错误直接返回
-			return -1, err
+			return index
+		} else {
+			index = 0
 		}
+		buf := &bytes.Buffer{}
+		binary.Write(buf, binary.BigEndian, data_node)
+		binary.Read(buf, binary.BigEndian, &node)
 
-		//解析数据块
-		buf := bytes.NewBuffer(dataNode[:n])
-		if err := binary.Read(buf, binary.BigEndian, &node); err != nil {
-			return -1, err
-		}
-
-		//更新偏移量
-		offset += int64(n)
+		offset += offset + NODE_SIZE + node.Size
 	}
 }
 
