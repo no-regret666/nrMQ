@@ -83,7 +83,7 @@ func (c *Consumer) SendInfo(port string, cli *server_operations.Client) error {
 	return err
 }
 
-func (c *Consumer) Subscription(topic, partition string, option int8) (err error) {
+func (c *Consumer) Sub(topic, partition string, option int8) (err error) {
 	//向zkserver订阅topic和partition   option:订阅类型，PTP/PSB
 	c.mu.RLock()
 	zk := c.zkBroker

@@ -1,3 +1,12 @@
+## producer功能
+创建Topic
+
+创建Partition
+
+向Topic-Partition生产信息
+
+设置Partition的状态，选择高可用的集中模式
+
 ## producer用法
 ### `CreateTopic(topicName string)`
 创建Topic，传入topicname
