@@ -21,7 +21,7 @@ type Producer struct {
 
 	Name            string //唯一标识
 	ZkBroker        zkserver_operations.Client
-	TopicPartitions map[string]server_operations.Client //map[topicname+partname]cli：缓存主题分区和broker关系
+	TopicPartitions map[string]server_operations.Client //map[topicname+partname]cli：缓存主题分区对应broker
 	TopPartIndex    map[string]int64                    // 主题分区与偏移量
 }
 
