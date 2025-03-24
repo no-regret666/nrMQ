@@ -239,6 +239,10 @@ func (c *Consumer) Pull(info Info) (int64, int64, []Msg, error) {
 func (c *Consumer) Pub(ctx context.Context, req *api.PubRequest) (resp *api.PubResponse, err error) {
 	fmt.Println(req)
 
+	/*
+		添加用户自己的处理代码
+	*/
+
 	return &api.PubResponse{Ret: true}, nil
 }
 

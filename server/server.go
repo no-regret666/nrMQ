@@ -148,7 +148,7 @@ func (s *Server) Make(opt Options, opt_cli []server.Option) {
 
 // 接收applych管道的内容
 // 写入partition文件中
-func (s *Server) GetApplych(aplych chan info) {
+func (s *Server) GetApplych(applych chan info) {
 	for msg := range s.aplych {
 		if msg.producer == "Leader" {
 			s.BecomeLeader(msg) //成为leader
