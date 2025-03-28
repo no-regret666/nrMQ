@@ -64,6 +64,30 @@ func (z *ZKServer) make(opt Options) {
 	z.PartToBro = make(map[string][]string)
 }
 
+// broker连接到zkserver，zkserver将在zookeeper上监听broker的状态
+func (z *ZKServer) HandleBroInfo(bro_name, bro_H_P string) error {
+	bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(bro_H_P))
+	if err != nil {
+		logger.DEBUG(logger.DError, "%v\n", err.Error())
+		return err
+	}
+	z.mu.Lock()
+	z.Brokers[bro_name] = bro_cli
+	z.mu.Unlock()
+
+	//加入consistent中进行负载均衡
+	z.consistent.Add(bro_name, 1)
+
+	//增加动态扩容机制，若有新broker加入应动态进行扩容
+	//既对一些服务进行动态转移----producer服务
+	//对于raft集群将集群停止并开启负载均衡完后将重新启动这个集群
+	//对于fetch机制同上，暂时停止服务后迁移副本broker，负载均衡
+
+	//对于consumer服务保持正常状态，继续提供服务
+
+	return nil
+}
+
 func (z *ZKServer) CreateTopic(info Info_in) Info_out {
 	//可添加限制数量等操作
 	tnode := zookeeper.TopicNode{Name: info.topicName}
@@ -190,7 +214,7 @@ func (z *ZKServer) SetPartitionState(info Info_in) Info_out {
 			for _, repNode := range reps {
 				bro_cli, ok := z.Brokers[repNode.BrokerName]
 				if !ok {
-					logger.DEBUG(logger.DError, "this partition(%v) leader broker is not connected\n", info.partName)
+					logger.DEBUG(logger.DError, "this partition(%v) leader broqker is not connected\n", info.partName)
 				} else {
 					//开启fetch机制
 					resp3, err := bro_cli.AddFetchPartition(context.Background(), &api.AddFetchPartitionRequest{
@@ -581,19 +605,6 @@ func (z *ZKServer) ProGetLeader(info Info_in) Info_out {
 	}
 }
 
-func (z *ZKServer) HandleBroInfo(bro_name, bro_H_P string) error {
-	bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(bro_H_P))
-	if err != nil {
-		logger.DEBUG(logger.DError, "%v\n", err.Error())
-		return err
-	}
-	z.mu.Lock()
-	z.Brokers[bro_name] = bro_cli
-	z.mu.Unlock()
-
-	return nil
-}
-
 func (z *ZKServer) SubHandle(info Info_in) error {
 	//在zookeeper上创建sub节点，若节点已经存在，则加入group中
 	path := fmt.Sprintf(zookeeper.PNodePath, z.zk.TopicRoot, info.topicName, info.partName)
@@ -709,6 +720,7 @@ func (z *ZKServer) SendPreoare(Parts []zookeeper.Part, info Info_in) (partkeys [
 	return partkeys
 }
 
+// Broker为节点
 type ConsistentBro struct {
 	//排序的hash虚拟节点(环形)
 	hashSortedNodes []uint32
@@ -717,6 +729,7 @@ type ConsistentBro struct {
 	//已绑定的broker为true
 	nodes map[string]bool
 
+	//用于跟踪Broker节点的临时状态（是否已被选中）
 	BroH map[string]bool
 
 	mu sync.RWMutex
@@ -742,7 +755,7 @@ func (c *ConsistentBro) hashKey(key string) uint32 {
 	return crc32.ChecksumIEEE([]byte(key))
 }
 
-// add consumer name as node
+// add broker name as node
 func (c *ConsistentBro) Add(node string, power int) error {
 	if node == "" {
 		return nil
@@ -774,7 +787,7 @@ func (c *ConsistentBro) SetBroHFalse() {
 	}
 }
 
-// return consumer name
+// return broker name
 func (c *ConsistentBro) GetNode(key string, num int) (reps []string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
