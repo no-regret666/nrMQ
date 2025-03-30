@@ -199,7 +199,7 @@ func (z *ZKServer) SetPartitionState(info Info_in) Info_out {
 				return Info_out{Err: err}
 			}
 
-			//更新newblock中的leader
+			//更新nowblock中的leader
 			err = z.BecomeLeader(Info_in{
 				cliName:   reps[0].BrokerName,
 				topicName: info.topicName,
@@ -214,7 +214,7 @@ func (z *ZKServer) SetPartitionState(info Info_in) Info_out {
 			for _, repNode := range reps {
 				bro_cli, ok := z.Brokers[repNode.BrokerName]
 				if !ok {
-					logger.DEBUG(logger.DError, "this partition(%v) leader broqker is not connected\n", info.partName)
+					logger.DEBUG(logger.DError, "this partition(%v) leader broker is not connected\n", info.partName)
 				} else {
 					//开启fetch机制
 					resp3, err := bro_cli.AddFetchPartition(context.Background(), &api.AddFetchPartitionRequest{
@@ -277,7 +277,7 @@ func (z *ZKServer) SetPartitionState(info Info_in) Info_out {
 			for ice, repNode := range reps {
 				//停止接收该Partition的信息，更换一个新文件写入信息，因为fetch机制一些信息已经写入leader
 				//但未写入follower中，更换文件从头写入，重新开启fetch机制为上一个文件同步信息
-				lastfilename := z.CloseAcceptPartition(info.topicName, info.partName, repNode.BrokerName, ice)
+				newfilename := z.CloseAcceptPartition(info.topicName, info.partName, repNode.BrokerName, ice)
 
 				bro_cli, ok := z.Brokers[repNode.BrokerName]
 				if !ok {
@@ -323,7 +323,7 @@ func (z *ZKServer) SetPartitionState(info Info_in) Info_out {
 						PartName:     info.partName,
 						HostPort:     LeaderBroker.BrokHostPort,
 						LeaderBroker: LeaderBroker.Name,
-						FileName:     lastfilename,
+						FileName:     newfilename,
 						Brokers:      data_brokers,
 					})
 

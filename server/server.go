@@ -38,7 +38,7 @@ type Server struct {
 	parts_rafts *parts_raft
 
 	//fetch
-	parts_fetch   map[string]string                    //topicName + partitionName to broker HostPort
+	parts_fetch   map[string]string                    //topicName + partitionName + filename to leaderBrokerName,是否开启fetch标志
 	brokers_fetch map[string]*server_operations.Client //brokerName to Client
 }
 
@@ -522,8 +522,8 @@ func (s *Server) FetchMsg(in info, cli *server_operations.Client, topic *Topic) 
 
 	logger.DEBUG(logger.DLog2, "the cli is %v\n", cli)
 
-	if in.fileName != "Nowfile.txt" {
-		//当文件名不为nowfile时
+	if in.fileName != "NowBlock.txt" {
+		//当文件名不为nowblock时
 		//创建一partition，并向该File中写入内容
 
 		go func() {
@@ -603,7 +603,7 @@ func (s *Server) FetchMsg(in info, cli *server_operations.Client, topic *Topic) 
 			}
 		}()
 	} else {
-		//当文件名为nowfile时
+		//当文件名为nowblock时
 		//zkserver已经让该broker准备接收文件
 		//直接调用addMessage
 
