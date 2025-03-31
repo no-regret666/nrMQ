@@ -629,7 +629,7 @@ func (s *Server) FetchMsg(in info, cli *server_operations.Client, topic *Topic) 
 					Consumer: s.Name,
 					Topic:    in.topicName,
 					Key:      in.partName,
-					Offset:   in.offset,
+					Offset:   index,
 					Size:     10,
 					Option:   TOPIC_KEY_PSB_PULL,
 				})
