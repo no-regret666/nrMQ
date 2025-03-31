@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"nrMQ/logger"
 	"os"
@@ -172,7 +173,6 @@ func (f *File) GetFirstIndex(file *os.File) int64 {
 }
 
 func (f *File) FindOffset(file *os.File, index int64) (int64, error) {
-	var node Key
 	data_node := make([]byte, NODE_SIZE)
 	offset := int64(0)
 	for {
@@ -181,25 +181,35 @@ func (f *File) FindOffset(file *os.File, index int64) (int64, error) {
 		size, err := file.ReadAt(data_node, offset)
 		f.mu.RUnlock()
 
-		if err == io.EOF { //读到文件末尾
-			logger.DEBUG(logger.DLog, "read All file,do not find this index\n")
-			return index, io.EOF
+		//错误处理
+		if err != nil {
+			if err == io.EOF {
+				logger.DEBUG(logger.DLog, "Reached EOF without finding index %d\n", index)
+				return index, io.EOF
+			}
+			logger.DEBUG(logger.DLog2, "Read error: %v", err)
+			return -1, fmt.Errorf("read error: %w", err)
 		}
+
 		if size != NODE_SIZE {
-			logger.DEBUG(logger.DLog2, "the size is %v NODE_SIZE is %v\n", size, NODE_SIZE)
-			return int64(-1), errors.New("read node size is not NODE_SIZE")
+			logger.DEBUG(logger.DLog2, "Incomplete read: got %d bytes,expected %d\n", size, NODE_SIZE)
+			return -1, fmt.Errorf("incomplete node read:expected %d bytes,got %d", NODE_SIZE, size)
 		}
-		buf := &bytes.Buffer{}
-		binary.Write(buf, binary.BigEndian, data_node)
-		binary.Read(buf, binary.BigEndian, &node)
+
+		//二进制解析
+		var node Key
+		if err := binary.Read(bytes.NewReader(data_node), binary.BigEndian, &node); err != nil {
+			logger.DEBUG(logger.DLog2, "Binary read error:%v", err)
+			return -1, fmt.Errorf("binary read error: %w", err)
+		}
+
+		//索引比较
 		if node.End_index < index {
 			offset += int64(NODE_SIZE + node.Size)
-		} else {
-			break
+			continue
 		}
+		return offset, nil
 	}
-
-	return offset, nil
 }
 
 func (f *File) ReadFile(file *os.File, offset int64) (Key, []Message, error) {
@@ -239,34 +249,50 @@ func (f *File) ReadFile(file *os.File, offset int64) (Key, []Message, error) {
 }
 
 func (f *File) ReadBytes(file *os.File, offset int64) (Key, []byte, error) {
-	var node Key
-	data_node := make([]byte, NODE_SIZE)
-
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 
+	// 读取节点元数据
+	data_node := make([]byte, NODE_SIZE)
 	size, err := file.ReadAt(data_node, offset)
 
-	if size != NODE_SIZE {
-		return node, nil, errors.New("read node size is not NODE_SIZE")
+	// 检查节点元数据读取结果
+	if err != nil {
+		if err == io.EOF {
+			logger.DEBUG(logger.DLeader, "EOF reached while reading node metadata at offset %d", offset)
+			return Key{}, nil, fmt.Errorf("node metadata EOF at offset %d", offset)
+		}
+		logger.DEBUG(logger.DLeader, "Read error: %v", err)
+		return Key{}, nil, fmt.Errorf("failed to read node metadata: %w", err)
 	}
-	if err == io.EOF { //读到文件末尾
-		logger.DEBUG(logger.DLeader, "read All file,do not find this index")
-		return node, nil, err
+	if size != NODE_SIZE {
+		logger.DEBUG(logger.DLog2, "Incomplete read: got %d bytes,expected %d\n", size, NODE_SIZE)
+		return Key{}, nil, fmt.Errorf("incomplete node read: expected %d bytes, got %d", NODE_SIZE, size)
 	}
 
-	buf := &bytes.Buffer{}
-	binary.Write(buf, binary.BigEndian, data_node)
-	binary.Read(buf, binary.BigEndian, &node)
+	// 解析节点元数据
+	var node Key
+	if err := binary.Read(bytes.NewReader(data_node), binary.BigEndian, &node); err != nil {
+		return Key{}, nil, fmt.Errorf("failed to decode node metadata: %w", err)
+	}
+
+	// 读取节点数据
 	data_msg := make([]byte, node.Size)
 	offset += int64(f.node_size)
 	size, err = file.ReadAt(data_msg, offset)
 
-	if int64(size) != node.Size {
-		return node, nil, errors.New("read node size is not NODE_SIZE")
+	// 检查节点数据读取结果
+	if err != nil {
+		if err == io.EOF {
+			logger.DEBUG(logger.DLeader, "EOF reached while reading node data at offset %d", offset+int64(NODE_SIZE))
+			return node, nil, fmt.Errorf("node data EOF at offset %d", offset+int64(NODE_SIZE))
+		}
+		logger.DEBUG(logger.DLeader, "Read error: %v", err)
+		return Key{}, nil, fmt.Errorf("failed to read node data: %w", err)
 	}
-	if err == io.EOF {
-		return node, nil, errors.New("read All file,do not find this index")
+	if int64(size) != node.Size {
+		logger.DEBUG(logger.DLeader, "Incomplete read: got %d bytes,expected %d\n", size, node.Size)
+		return node, nil, fmt.Errorf("incomplete node data read: expected %d bytes, got %d", node.Size, size)
 	}
 
 	return node, data_msg, nil
