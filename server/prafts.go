@@ -83,10 +83,13 @@ func (p *parts_raft) Make(name string, opts []server.Option, appench chan info, 
 	srv_raft := raft_operations.NewServer(p, opts...)
 	p.srv_raft = srv_raft
 
-	err := srv_raft.Run()
-	if err != nil {
-		logger.DEBUG_RAFT(logger.DError, "the raft run fail %v\n", err.Error())
-	}
+	go func() {
+		err := srv_raft.Run()
+
+		if err != nil {
+			logger.DEBUG_RAFT(logger.DError, "the raft run fail %v\n", err.Error())
+		}
+	}()
 }
 
 func (p *parts_raft) Append(in info) (string, error) {

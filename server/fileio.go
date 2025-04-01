@@ -18,6 +18,21 @@ type File struct {
 	node_size int
 }
 
+// 消息以 key-msg([]byte)-key-msg-...... 的格式写入文件（分块存储）
+type Key struct {
+	Size        int64 `json:"size"`
+	Start_index int64 `json:"start_index"`
+	End_index   int64 `json:"end_index"`
+}
+
+type Message struct {
+	Index      int64  `json:"index"`
+	Size       int8   `json:"size"`
+	Topic_name string `json:"topic_name"`
+	Part_name  string `json:"part_name"`
+	Msg        []byte `json:"msg"`
+}
+
 // 先检查该磁盘是否存在该文件，如不存在则需要创建
 func NewFile(path_name string) (file *File, fd *os.File, Err string, err error) {
 	if !CheckFileOrList(path_name) {

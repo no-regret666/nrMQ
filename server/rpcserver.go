@@ -59,7 +59,7 @@ func (s *RPCServer) Start(opts_cli, opts_zks, opts_raf []server.Option, opt Opti
 			err := srv_bro_cli.Run()
 
 			if err != nil {
-				fmt.Println(err.Error())
+				logger.DEBUG(logger.DError, "start zkbroker failed"+err.Error())
 			}
 		}()
 	}

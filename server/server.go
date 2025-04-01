@@ -42,20 +42,6 @@ type Server struct {
 	brokers_fetch map[string]*server_operations.Client //brokerName to Client
 }
 
-type Key struct {
-	Size        int64 `json:"size"`
-	Start_index int64 `json:"start_index"`
-	End_index   int64 `json:"end_index"`
-}
-
-type Message struct {
-	Index      int64  `json:"index"`
-	Size       int8   `json:"size"`
-	Topic_name string `json:"topic_name"`
-	Part_name  string `json:"part_name"`
-	Msg        []byte `json:"msg"`
-}
-
 type info struct {
 	topicName string
 	partName  string
@@ -107,7 +93,7 @@ func (s *Server) Make(opt Options, opt_cli []server.Option) {
 
 	//本地创建parts-raft，为raft同步做准备
 	s.parts_rafts = NewParts_Raft()
-	go s.parts_rafts.Make(opt.Name, opt_cli, s.aplych, s.me)
+	s.parts_rafts.Make(opt.Name, opt_cli, s.aplych, s.me)
 	s.parts_rafts.StartServer()
 
 	//在zookeeper上创建一个永久节点，若存在则不需要创建
