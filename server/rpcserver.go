@@ -71,7 +71,7 @@ func (s *RPCServer) ShutDown_server() {
 	if s.srv_bro != nil {
 		(*s.srv_bro).Stop()
 	}
-	if s.zkserver != nil {
+	if s.srv_cli != nil {
 		(*s.srv_cli).Stop()
 	}
 }

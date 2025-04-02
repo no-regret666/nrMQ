@@ -33,17 +33,51 @@ type ZkInfo struct {
 	Root      string
 }
 
-func NewZK(info ZkInfo) *ZK {
+func NewZK(info ZkInfo) (*ZK, error) {
 	conn, _, err := zk.Connect(info.HostPorts, time.Duration(info.Timeout)*time.Second)
 	if err != nil {
 		logger.DEBUG(logger.DError, "%v\n", err.Error())
 	}
-	return &ZK{
+
+	z := &ZK{
 		conn:       conn,
 		Root:       info.Root,
 		BrokerRoot: info.Root + "/Brokers",
 		TopicRoot:  info.Root + "/Topics",
 	}
+
+	ok, _, err := z.conn.Exists(z.Root)
+	if ok {
+		logger.DEBUG(logger.DLog, "the zkRoot already exists.")
+	} else {
+		_, err = z.conn.Create(z.Root, nil, 0, zk.WorldACL(zk.PermAll))
+		if err != nil {
+			logger.DEBUG(logger.DError, "the zkRoot %v create failed %v\n", z.Root, err.Error())
+			return nil, err
+		}
+	}
+	ok, _, err = z.conn.Exists(z.BrokerRoot)
+	if ok {
+		logger.DEBUG(logger.DLog, "the zkBrokerRoot already exists.")
+	} else {
+		_, err = z.conn.Create(z.BrokerRoot, nil, 0, zk.WorldACL(zk.PermAll))
+		if err != nil {
+			logger.DEBUG(logger.DError, "the zkBroker %v create failed %v\n", z.BrokerRoot, err.Error())
+			return nil, err
+		}
+	}
+	ok, _, err = z.conn.Exists(z.TopicRoot)
+	if ok {
+		logger.DEBUG(logger.DLog, "the zkTopicRoot already exists.")
+	} else {
+		_, err = z.conn.Create(z.TopicRoot, nil, 0, zk.WorldACL(zk.PermAll))
+		if err != nil {
+			logger.DEBUG(logger.DError, "the zkTopicRoot %v create failed %v\n", z.TopicRoot, err.Error())
+			return nil, err
+		}
+	}
+
+	return z, nil
 }
 
 type BrokerNode struct {

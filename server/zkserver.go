@@ -19,7 +19,7 @@ import (
 
 type ZKServer struct {
 	mu              sync.RWMutex
-	zk              zookeeper.ZK
+	zk              *zookeeper.ZK
 	Name            string
 	Info_Topics     map[string]zookeeper.TopicNode
 	Info_Partitions map[string]zookeeper.PartitionNode
@@ -50,10 +50,11 @@ type Info_out struct {
 }
 
 func NewZKServer(zkinfo zookeeper.ZkInfo) *ZKServer {
-	return &ZKServer{
-		mu: sync.RWMutex{},
-		zk: *zookeeper.NewZK(zkinfo),
-	}
+	zkServer := new(ZKServer)
+	zkServer.zk, _ = zookeeper.NewZK(zkinfo)
+	zkServer.mu = sync.RWMutex{}
+
+	return zkServer
 }
 
 func (z *ZKServer) make(opt Options) {
@@ -62,6 +63,8 @@ func (z *ZKServer) make(opt Options) {
 	z.Info_Partitions = make(map[string]zookeeper.PartitionNode)
 	z.Brokers = make(map[string]server_operations.Client)
 	z.PartToBro = make(map[string][]string)
+
+	z.consistent = NewConsistentBro()
 }
 
 // broker连接到zkserver，zkserver将在zookeeper上监听broker的状态

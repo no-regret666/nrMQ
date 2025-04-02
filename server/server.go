@@ -73,10 +73,11 @@ type info struct {
 }
 
 func NewServer(zkinfo zookeeper.ZkInfo) *Server {
-	return &Server{
-		zk: zookeeper.NewZK(zkinfo),
-		mu: sync.RWMutex{},
-	}
+	server := &Server{}
+	server.zk, _ = zookeeper.NewZK(zkinfo) //连接上zookeeper
+	server.mu = sync.RWMutex{}
+
+	return server
 }
 
 func (s *Server) Make(opt Options, opt_cli []server.Option) {
