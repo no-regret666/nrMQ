@@ -184,11 +184,11 @@ func (rf *Raft) readPersist(data []byte) {
 
 func (rf *Raft) readSnapshot(data []byte) {
 	if len(data) == 0 {
-		DPrintf("%d 读取快照失败：无快照", rf.me)
+		DPrintf("%d 读取快照失败：无快照\n", rf.me)
 		return
 	}
 	rf.snapshot = data
-	DPrintf("%d 读取快照成功", rf.me)
+	DPrintf("%d 读取快照成功\n", rf.me)
 }
 
 // the service says it has created a snapshot that has
@@ -201,7 +201,7 @@ func (rf *Raft) Snapshot(index int, snapshot []byte) {
 	defer rf.mu.Unlock()
 
 	if rf.commitIndex < index || index <= rf.log[0].Index {
-		DPrintf("[%d] %d 拒绝 snapshot 请求 index %d", rf.currentTerm, rf.me, index)
+		DPrintf("[%d] %d 拒绝 snapshot 请求 index %d\n", rf.currentTerm, rf.me, index)
 		return
 	}
 
@@ -212,7 +212,7 @@ func (rf *Raft) Snapshot(index int, snapshot []byte) {
 	rf.log = append(rf.log[0:1], rf.log[pos+1:]...)
 	rf.snapshot = snapshot
 	rf.persist()
-	DPrintf("[%d] %d 将索引 %d 及之前的日志压缩为快照", rf.currentTerm, rf.me, index)
+	DPrintf("[%d] %d 将索引 %d 及之前的日志压缩为快照\n", rf.currentTerm, rf.me, index)
 }
 
 // example RequestVote RPC arguments structure.
@@ -243,7 +243,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs) *RequestVoteReply {
 	if args.Term < rf.currentTerm || (args.Term == rf.currentTerm && rf.votedFor != -1 && rf.votedFor != args.CandidateId) {
 		reply.Term = rf.currentTerm
 		reply.VoteGranted = false
-		DPrintf("[%d] %d的任期大于%d或者在当前任期已经投出过选票，拒绝投票", rf.currentTerm, rf.me, args.CandidateId)
+		DPrintf("[%d] %d的任期大于%d或者在当前任期已经投出过选票，拒绝投票\n", rf.currentTerm, rf.me, args.CandidateId)
 		return reply
 	}
 	if args.Term > rf.currentTerm {
@@ -256,7 +256,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs) *RequestVoteReply {
 	if args.LastLogTerm < term || (args.LastLogTerm == term && args.LastLogIndex < index) {
 		reply.Term = rf.currentTerm
 		reply.VoteGranted = false
-		DPrintf("[%d} %d的日志比%d的日志新，拒绝投票", rf.currentTerm, rf.me, args.CandidateId)
+		DPrintf("[%d} %d的日志比%d的日志新，拒绝投票\n", rf.currentTerm, rf.me, args.CandidateId)
 		return reply
 	}
 
@@ -264,7 +264,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs) *RequestVoteReply {
 	rf.resetTimeout()
 	reply.Term = rf.currentTerm
 	reply.VoteGranted = true
-	DPrintf("[%d] %d agree %d to become leader", rf.currentTerm, rf.me, rf.votedFor)
+	DPrintf("[%d] %d agree %d to become leader\n", rf.currentTerm, rf.me, rf.votedFor)
 	return reply
 }
 
@@ -309,12 +309,12 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs) *AppendEntriesReply {
 	} else if args.PrevLogIndex > rf.log[len(rf.log)-1].Index { //prevLogIndex处不存在日志
 		reply.XTerm = -1
 		reply.XIndex = rf.log[len(rf.log)-1].Index + 1
-		DPrintf("[%d] %d's logs are less than the leader %d's", rf.currentTerm, rf.me, args.LeaderId)
+		DPrintf("[%d] %d's logs are less than the leader %d's\n", rf.currentTerm, rf.me, args.LeaderId)
 		return reply
 	} else if args.PrevLogIndex == rf.log[0].Index && args.PrevLogTerm != rf.log[0].Term {
 		reply.XTerm = rf.log[0].Term
 		reply.XIndex = args.PrevLogIndex - 1
-		DPrintf("[%d] %d 's logs conflict with the leader's", rf.currentTerm, rf.me)
+		DPrintf("[%d] %d 's logs conflict with the leader's\n", rf.currentTerm, rf.me)
 		return reply
 	} else if args.PrevLogIndex != rf.log[0].Index && args.PrevLogTerm != rf.log[args.PrevLogIndex-rf.log[0].Index].Term {
 		reply.XTerm = rf.log[args.PrevLogIndex-rf.log[0].Index].Term
@@ -323,20 +323,20 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs) *AppendEntriesReply {
 			index--
 		}
 		reply.XIndex = index + 1
-		DPrintf("[%d] %d 's logs conflict with the leader's", rf.currentTerm, rf.me)
+		DPrintf("[%d] %d 's logs conflict with the leader's\n", rf.currentTerm, rf.me)
 		return reply
 	}
 
 	if len(args.Log) != 0 {
 		rf.log = append(rf.log[:args.PrevLogIndex-rf.log[0].Index+1], args.Log...)
-		DPrintf("[%d] %d successfully append logs to %d from the leader %d", rf.currentTerm, rf.me, rf.log[len(rf.log)-1].Index, args.LeaderId)
+		DPrintf("[%d] %d successfully append logs to %d from the leader %d\n", rf.currentTerm, rf.me, rf.log[len(rf.log)-1].Index, args.LeaderId)
 	}
 	prevCommitIndex := rf.commitIndex
 	if args.LeaderCommit > rf.commitIndex {
 		rf.commitIndex = min(args.LeaderCommit, len(rf.log)+rf.log[0].Index-1)
 	}
 	if rf.commitIndex > prevCommitIndex {
-		DPrintf("[%d] %d update commitIndex to %d according to the leader %d", rf.currentTerm, rf.me, rf.commitIndex, args.LeaderId)
+		DPrintf("[%d] %d update commitIndex to %d according to the leader %d\n", rf.currentTerm, rf.me, rf.commitIndex, args.LeaderId)
 		rf.applyCond.Signal()
 	}
 	reply.Success = true
@@ -388,11 +388,11 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs) *InstallSnapshotReply
 		SnapshotTerm:  args.LastIncludedTerm,
 		SnapshotIndex: args.LastIncludedIndex,
 	}
-	DPrintf("[%d] %d 将日志快照 %d 应用到状态机", rf.currentTerm, rf.me, rf.log[0].Index)
+	DPrintf("[%d] %d 将日志快照 %d 应用到状态机\n", rf.currentTerm, rf.me, rf.log[0].Index)
 	rf.lastApplied = args.LastIncludedIndex
 	rf.commitIndex = rf.lastApplied
 	reply.Term = rf.currentTerm
-	DPrintf("[%d] %d 成功接收来自 %d 的日志快照到索引 %d", rf.currentTerm, rf.me, args.LeaderId, args.LastIncludedIndex)
+	DPrintf("[%d] %d 成功接收来自 %d 的日志快照到索引 %d\n", rf.currentTerm, rf.me, args.LeaderId, args.LastIncludedIndex)
 	reply.Success = true
 	return reply
 }
@@ -509,7 +509,7 @@ func (rf *Raft) Start(command Operation) (int, int, bool) {
 	}
 	rf.log = append(rf.log, newLog)
 	rf.persist()
-	DPrintf("[%d] %d receive a new command %v,then append at %d", rf.currentTerm, rf.me, command, newLog.Index)
+	DPrintf("[%d] %d receive a new command %v,then append at %d\n", rf.currentTerm, rf.me, command, newLog.Index)
 	return newLog.Index, newLog.Term, true
 }
 
@@ -536,11 +536,11 @@ func (rf *Raft) resetTimeout() {
 	rf.time = time.Now()
 	ms := 300 + (rand.Int63() % 300)
 	rf.electionTimeout = time.Duration(ms) * time.Millisecond
-	DPrintf("[%d] %d reset timeout %v", rf.currentTerm, rf.me, rf.electionTimeout)
+	DPrintf("[%d] %d reset timeout %v\n", rf.currentTerm, rf.me, rf.electionTimeout)
 }
 
 func (rf *Raft) startElection() {
-	DPrintf("[%d] %d try to be Leader", rf.currentTerm, rf.me)
+	DPrintf("[%d] %d try to be Leader\n", rf.currentTerm, rf.me)
 	rf.currentTerm++
 	rf.votedFor = rf.me
 	rf.state = "Candidate"
@@ -560,7 +560,7 @@ func (rf *Raft) startElection() {
 		}
 		go func(peer int) {
 			if reply, ok := rf.callRequestVote(peer, &args); ok {
-				DPrintf("[%d] %d 向 %d 发送requestVote", rf.currentTerm, rf.me, peer)
+				DPrintf("[%d] %d 向 %d 发送requestVote\n", rf.currentTerm, rf.me, peer)
 				rf.mu.Lock()
 				defer rf.mu.Unlock()
 				defer rf.persist()
@@ -570,7 +570,7 @@ func (rf *Raft) startElection() {
 					}
 					voted++
 					if voted >= len(rf.peers)/2+1 {
-						DPrintf("[%d] %d get more than half votes,succeed to be leader", rf.currentTerm, rf.me)
+						DPrintf("[%d] %d get more than half votes,succeed to be leader\n", rf.currentTerm, rf.me)
 						for i := 0; i < len(rf.peers); i++ {
 							rf.nextIndex[i] = len(rf.log) + rf.log[0].Index
 							rf.matchIndex[i] = rf.log[0].Index
@@ -583,7 +583,7 @@ func (rf *Raft) startElection() {
 					rf.state = "Follower"
 					rf.currentTerm = reply.Term
 					rf.votedFor = -1
-					DPrintf("[%d] %d fail to be leader", rf.currentTerm, rf.me)
+					DPrintf("[%d] %d fail to be leader\n", rf.currentTerm, rf.me)
 					return
 				}
 			}
@@ -611,7 +611,7 @@ func (rf *Raft) updateCommitIndex() {
 	}
 	rf.commitIndex = index
 	if rf.commitIndex > prevCommitIndex {
-		DPrintf("[%d] %d update commitIndex to %d", rf.currentTerm, rf.me, rf.commitIndex)
+		DPrintf("[%d] %d update commitIndex to %d\n", rf.currentTerm, rf.me, rf.commitIndex)
 		rf.applyCond.Signal()
 	}
 }
@@ -643,7 +643,7 @@ func (rf *Raft) ticker() {
 
 // 发送 AppendEntries(日志复制/心跳) / InstallSnapshot
 func (rf *Raft) BroadcastHeartBeat() {
-	DPrintf("[%d] leader %d start to send heartbeats", rf.currentTerm, rf.me)
+	DPrintf("[%d] leader %d start to send heartbeats\n", rf.currentTerm, rf.me)
 	for rf.killed() == false {
 		rf.mu.Lock()
 		if rf.state != "Leader" {
@@ -709,7 +709,7 @@ func (rf *Raft) handleInstallSnapshotReply(peer int, args InstallSnapshotArgs, r
 		rf.resetTimeout()
 		rf.currentTerm = reply.Term
 		rf.votedFor = -1
-		DPrintf("[%d] a new leader happen,%d become follower", rf.currentTerm, rf.me)
+		DPrintf("[%d] a new leader happen,%d become follower\n", rf.currentTerm, rf.me)
 		return
 	}
 	if reply.Success {
@@ -744,7 +744,7 @@ func (rf *Raft) genAppendEntriesArgs(peer int) AppendEntriesArgs {
 	if rf.nextIndex[peer] <= rf.log[len(rf.log)-1].Index {
 		args.Log = make([]Log, args.LogIndex+1-rf.nextIndex[peer])
 		copy(args.Log, rf.log[rf.nextIndex[peer]-rf.log[0].Index:len(rf.log)])
-		DPrintf("[%d] %d send %d %d logs from %d", rf.currentTerm, rf.me, peer, len(args.Log), rf.nextIndex[peer])
+		DPrintf("[%d] %d send %d %d logs from %d\n", rf.currentTerm, rf.me, peer, len(args.Log), rf.nextIndex[peer])
 	} else {
 		// DPrintf("just heartbeat")
 	}
@@ -760,7 +760,7 @@ func (rf *Raft) handleAppendEntriesReply(peer int, args AppendEntriesArgs, reply
 		rf.resetTimeout()
 		rf.currentTerm = reply.Term
 		rf.votedFor = -1
-		DPrintf("[%d] a new leader happen,%d become follower", rf.currentTerm, rf.me)
+		DPrintf("[%d] a new leader happen,%d become follower\n", rf.currentTerm, rf.me)
 		return
 	}
 	if reply.Success == true {
@@ -775,7 +775,7 @@ func (rf *Raft) handleAppendEntriesReply(peer int, args AppendEntriesArgs, reply
 		return
 	} else if reply.Success == false {
 		rf.nextIndex[peer] = max(reply.XIndex, 1)
-		DPrintf("[%d] %d change %d's nextIndex to %d", rf.currentTerm, rf.me, peer, rf.nextIndex[peer])
+		DPrintf("[%d] %d change %d's nextIndex to %d\n", rf.currentTerm, rf.me, peer, rf.nextIndex[peer])
 	}
 }
 
@@ -793,7 +793,7 @@ func (rf *Raft) applyCommited() {
 		rf.mu.Unlock()
 
 		for _, msg := range logs {
-			DPrintf("[%d] %d apply the log %d %v", rf.currentTerm, rf.me, msg.Index, msg.Command)
+			DPrintf("[%d] %d apply the log %d %v\n", rf.currentTerm, rf.me, msg.Index, msg.Command)
 			rf.applyCh <- ApplyMsg{
 				CommandValid: true,
 				Command:      msg.Command,

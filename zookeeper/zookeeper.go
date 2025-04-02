@@ -48,7 +48,7 @@ func NewZK(info ZkInfo) (*ZK, error) {
 
 	ok, _, err := z.conn.Exists(z.Root)
 	if ok {
-		logger.DEBUG(logger.DLog, "the zkRoot already exists.")
+		logger.DEBUG(logger.DLog, "the %v already exists.\n", z.Root)
 	} else {
 		_, err = z.conn.Create(z.Root, nil, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
@@ -58,7 +58,7 @@ func NewZK(info ZkInfo) (*ZK, error) {
 	}
 	ok, _, err = z.conn.Exists(z.BrokerRoot)
 	if ok {
-		logger.DEBUG(logger.DLog, "the zkBrokerRoot already exists.")
+		logger.DEBUG(logger.DLog, "the %v already exists.\n", z.BrokerRoot)
 	} else {
 		_, err = z.conn.Create(z.BrokerRoot, nil, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
@@ -68,7 +68,7 @@ func NewZK(info ZkInfo) (*ZK, error) {
 	}
 	ok, _, err = z.conn.Exists(z.TopicRoot)
 	if ok {
-		logger.DEBUG(logger.DLog, "the zkTopicRoot already exists.")
+		logger.DEBUG(logger.DLog, "the %v already exists.\n", z.TopicRoot)
 	} else {
 		_, err = z.conn.Create(z.TopicRoot, nil, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
@@ -279,12 +279,12 @@ func (z *ZK) GetPartState(topic_name, part_name string) (PartitionNode, error) {
 func (z *ZK) CreateState(name string) error {
 	path := z.BrokerRoot + "/" + name + "/state"
 	ok, _, err := z.conn.Exists(path)
-	logger.DEBUG(logger.DLog, "create broker state %v ok %v\n", path, ok)
 	if ok {
 		return err
 	}
 	_, err = z.conn.Create(path, nil, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
 	if err != nil {
+		logger.DEBUG(logger.DLog, "create broker state %v failed %v\n", path, err.Error())
 		return err
 	}
 	return nil
