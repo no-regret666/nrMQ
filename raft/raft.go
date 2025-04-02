@@ -133,6 +133,7 @@ func (rf *Raft) persist() {
 	// e.Encode(rf.yyy)
 	// raftstate := w.Bytes()
 	// rf.persister.Save(raftstate, nil)
+
 	w := new(bytes.Buffer)
 	e := NewEncoder(w)
 	if e.Encode(rf.currentTerm) != nil || e.Encode(rf.votedFor) != nil || e.Encode(rf.log) != nil {
@@ -161,6 +162,7 @@ func (rf *Raft) readPersist(data []byte) {
 	//   rf.xxx = xxx
 	//  rf.yyy = yyy
 	// }
+
 	if data == nil || len(data) < 1 {
 		return
 	}
@@ -430,6 +432,8 @@ func (rf *Raft) callRequestVote(server int, args *RequestVoteArgs) (*RequestVote
 		CandidateId:  int8(args.CandidateId),
 		LastLogIndex: int8(args.LastLogIndex),
 		LastLogTerm:  int8(args.LastLogTerm),
+		TopicName:    rf.topicName,
+		PartName:     rf.partName,
 	})
 	if err != nil {
 		return nil, false
@@ -451,6 +455,8 @@ func (rf *Raft) callAppendEntries(server int, args *AppendEntriesArgs) (*AppendE
 		Log:          log_,
 		LeaderCommit: int8(args.LeaderCommit),
 		LogIndex:     int8(args.LogIndex),
+		TopicName:    rf.topicName,
+		PartName:     rf.partName,
 	})
 	if err != nil {
 		return nil, false
@@ -472,6 +478,8 @@ func (rf *Raft) callInstallSnapshot(server int, args *InstallSnapshotArgs) (*Ins
 		LastIncludedIndex: int8(args.LastIncludedIndex),
 		LastIncludedTerm:  int8(args.LastIncludedTerm),
 		Snapshot:          snapshot_,
+		TopicName:         rf.topicName,
+		PartName:          rf.partName,
 	})
 	if err != nil {
 		return nil, false
@@ -536,7 +544,7 @@ func (rf *Raft) resetTimeout() {
 	rf.time = time.Now()
 	ms := 300 + (rand.Int63() % 300)
 	rf.electionTimeout = time.Duration(ms) * time.Millisecond
-	DPrintf("[%d] %d reset timeout %v\n", rf.currentTerm, rf.me, rf.electionTimeout)
+	//DPrintf("[%d] %d reset timeout %v\n", rf.currentTerm, rf.me, rf.electionTimeout)
 }
 
 func (rf *Raft) startElection() {
@@ -838,14 +846,14 @@ func Make(peers []*raft_operations.Client, me int,
 	rf.peers = peers
 	rf.persister = persister
 	rf.me = me
-	rf.topicName = topicName
+	rf.topicName = topicName //标识是代表哪个server的raft
 	rf.partName = partName
 
 	// Your initialization code here (3A, 3B, 3C).
 	rf.state = "Follower"
 	rf.currentTerm = 0
 	rf.votedFor = -1
-	rf.log = []Log{}
+	rf.log = []Log{{0, 0, false, -1, Operation{}}}
 	rf.commitIndex = 0
 	rf.lastApplied = 0
 	rf.nextIndex = make([]int, len(rf.peers))

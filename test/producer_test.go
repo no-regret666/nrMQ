@@ -68,6 +68,7 @@ func TestProducerPush(t *testing.T) {
 	}
 
 	//将partition设置状态
+	fmt.Println("Producer set partition state")
 	err = producer.SetPartitionState("phone_number", "wang", -1, 3)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -76,6 +77,7 @@ func TestProducerPush(t *testing.T) {
 	//等待领导者选出
 	time.Sleep(5 * time.Second)
 
+	fmt.Println("Producer push message to partition")
 	for _, message := range messages {
 		err = producer.Push(clients.Message{
 			Topic:     "phone_number",
@@ -84,7 +86,7 @@ func TestProducerPush(t *testing.T) {
 		}, -1)
 	}
 
-	time.Sleep(time.Second * 30)
+	//time.Sleep(time.Second * 30)
 
 	ShutDownBrokers(brokers)
 	ShutDownZKServer(zkServer)
