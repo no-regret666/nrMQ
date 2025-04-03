@@ -503,7 +503,7 @@ func (rf *Raft) callInstallSnapshot(server int, args *InstallSnapshotArgs) (*Ins
 // if it's ever committed. the second return value is the current
 // term. the third return value is true if this server believes it is
 // the leader.
-func (rf *Raft) Start(command Operation) (int, int, bool) {
+func (rf *Raft) Start(command Operation, beLeader bool, leader int) (int, int, bool) {
 	// Your code here (3B).
 	if _, is := rf.GetState(); is == false {
 		return -1, -1, false
@@ -585,6 +585,14 @@ func (rf *Raft) startElection() {
 						}
 						rf.state = "Leader"
 						go rf.BroadcastHeartBeat()
+
+						//追加一条标志自己成为leader的日志
+						go rf.Start(Operation{
+							Cli_name: "Leader",
+							Tpart:    rf.topicName + rf.partName,
+							Topic:    rf.topicName,
+							Part:     rf.partName,
+						}, true, rf.me)
 						return
 					}
 				} else if reply.Term > rf.currentTerm {
@@ -802,35 +810,26 @@ func (rf *Raft) applyCommited() {
 
 		for _, msg := range logs {
 			DPrintf("[%d] %d apply the log %d %v\n", rf.currentTerm, rf.me, msg.Index, msg.Command)
-			rf.applyCh <- ApplyMsg{
+			applyMsg := ApplyMsg{
 				CommandValid: true,
 				Command:      msg.Command,
 				CommandIndex: msg.Index,
+				BeLeader:     msg.BeLeader,
 			}
+			if applyMsg.BeLeader {
+				applyMsg.TopicName = rf.topicName
+				applyMsg.PartName = rf.partName
+				applyMsg.Leader = msg.Leader
+			}
+			rf.applyCh <- applyMsg
 		} //apply时比较耗时，这个时候不能持有锁
+
 		rf.mu.Lock()
 		rf.lastApplied = max(rf.lastApplied, commitIndex) //如果有日志快照被应用，需要考虑到被该日志快照覆盖的日志已经过期，不能再apply
 		rf.mu.Unlock()
 	}
 }
 
-//	if _, is := rf.GetState(); is == false {
-//		return -1, -1, false
-//	}
-//
-// rf.mu.Lock()
-// defer rf.mu.Unlock()
-//
-//	newLog := Log{
-//		Term:    rf.currentTerm,
-//		Index:   len(rf.log) + rf.log[0].Index,
-//		Command: command,
-//	}
-//
-// rf.log = append(rf.log, newLog)
-// rf.persist()
-// DPrintf("[%d] %d receive a new command %v,then append at %d", rf.currentTerm, rf.me, command, newLog.Index)
-// return newLog.Index, newLog.Term, true
 // the service or tester wants to create a Raft server. the ports
 // of all the Raft servers (including this one) are in peers[]. this
 // server's port is peers[me]. all the servers' peers[] arrays

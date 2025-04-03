@@ -170,7 +170,7 @@ func (p *parts_raft) Append(in info) (string, error) {
 	if in2 == in.cmdIndex {
 		_, isLeader = p.Partitions[str].GetState()
 	} else {
-		index, _, isLeader = p.Partitions[str].Start(Op)
+		index, _, isLeader = p.Partitions[str].Start(Op, false, 0)
 	}
 
 	if isLeader {
@@ -342,7 +342,7 @@ func (p *parts_raft) StartServer() {
 					p.mu.RLock()
 					for str, raft := range p.Partitions {
 						O.Tpart = str
-						raft.Start(O)
+						raft.Start(O, false, 0)
 					}
 					p.mu.RUnlock()
 				}
