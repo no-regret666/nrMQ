@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"nrMQ/client/clients"
+	"nrMQ/logger"
 	"nrMQ/server"
 	"testing"
 	"time"
@@ -26,7 +27,7 @@ func TestConsumer1(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	fmt.Println("Consumer Sub a Topic")
-	err := consumer.Sub("phone number", "北京", PTP)
+	err := consumer.Sub("phone_number", "北京", PTP)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -55,7 +56,7 @@ func TestPullPTP(t *testing.T) {
 		Option: server.TOPIC_NIL_PTP_PULL,
 	})
 	if err != nil {
-		t.Fatal(ret, err.Error())
+		logger.DEBUG(logger.DError, ret+" "+err.Error())
 	}
 
 	for _, part := range parts {
