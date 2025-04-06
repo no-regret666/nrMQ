@@ -324,8 +324,8 @@ func (s *RPCServer) UpdatePTPOffset(ctx context.Context, req *api.UpdatePTPOffse
 }
 
 func (s *RPCServer) Sub(ctx context.Context, req *api.SubRequest) (r *api.SubResponse, err error) {
-	err = s.zkserver.SubHandle(Info_in{
-		cliName:   req.Consumer,
+	err = s.server.SubHandle(info{
+		consumer:  req.Consumer,
 		topicName: req.Topic,
 		partName:  req.Key,
 		option:    req.Option,

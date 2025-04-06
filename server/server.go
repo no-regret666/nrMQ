@@ -216,13 +216,13 @@ func (s *Server) PrepareAcceptHandle(in info) (ret string, err error) {
 // 指NowBlock中的Leader停止接收信息，副本可继续Pull信息，当EOF后关闭
 func (s *Server) CloseAcceptHandle(in info) (start, end int64, ret string, err error) {
 	s.mu.RLock()
+	defer s.mu.RUnlock()
 	topic, ok := s.topics[in.topicName]
 	if !ok {
 		ret = "this topic is not in this broker"
 		logger.DEBUG(logger.DError, "this topic(%v) is not in this broker\n", in.topicName)
 		return 0, 0, ret, errors.New(ret)
 	}
-	s.mu.RUnlock()
 	return topic.CloseAcceptPart(in)
 }
 
@@ -248,6 +248,7 @@ func (s *Server) PrepareSendHandle(in info) (ret string, err error) {
 func (s *Server) AddRaftHandle(in info) (ret string, err error) {
 	//检测该Partition的Raft是否已经启动
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	index := 0
 	nodes := make(map[int]string)
 	for k, v := range in.brok_me {
@@ -277,8 +278,6 @@ func (s *Server) AddRaftHandle(in info) (ret string, err error) {
 	logger.DEBUG(logger.DLog, "the Broker %v raft Me %v\n", s.Name, s.me)
 	//检查或创建底层part_raft
 	s.parts_rafts.AddPart_Raft(peers, s.me, in.topicName, in.partName)
-
-	s.mu.Unlock()
 
 	logger.DEBUG(logger.DLog, "the %v add over\n", s.Name)
 
@@ -334,6 +333,7 @@ func (s *Server) AddFetchHandle(in info) (ret string, err error) {
 		time.Sleep(time.Microsecond * 100)
 		str := in.topicName + in.partName + in.fileName
 		s.mu.Lock()
+		defer s.mu.Unlock()
 		broker, ok := s.brokers_fetch[in.LeaderBroker]
 		if !ok {
 			logger.DEBUG(logger.DLog, "%v connection the leader broker %v the HP(%v)\n", s.Name, in.LeaderBroker, in.HostPort)
@@ -356,7 +356,6 @@ func (s *Server) AddFetchHandle(in info) (ret string, err error) {
 			logger.DEBUG(logger.DLog, "%v,info(%v)\n", ret, in)
 			return ret, errors.New(ret)
 		}
-		s.mu.Unlock()
 
 		return s.FetchMsg(in, broker, topic)
 	}
@@ -579,6 +578,7 @@ func (s *Server) FetchMsg(in info, cli *server_operations.Client, topic *Topic) 
 							leader_bro, err := server_operations.NewClient(s.Name, client.WithHostPorts(resp.HostPort))
 							if err != nil {
 								logger.DEBUG(logger.DError, "%v\n", err.Error())
+								s.mu.Unlock()
 								return
 							}
 							s.brokers_fetch[resp.LeaderBroker] = &leader_bro
@@ -670,6 +670,7 @@ func (s *Server) FetchMsg(in info, cli *server_operations.Client, topic *Topic) 
 							leader_bro, err := server_operations.NewClient(s.Name, client.WithHostPorts(resp.HostPort))
 							if err != nil {
 								logger.DEBUG(logger.DError, "%v\n", err.Error())
+								s.mu.Unlock()
 								return
 							}
 							s.brokers_fetch[resp.LeaderBroker] = &leader_bro
