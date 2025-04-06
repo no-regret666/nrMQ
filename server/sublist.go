@@ -72,6 +72,7 @@ func (t *Topic) PrepareAcceptHandle(in info) (ret string, err error) {
 	str += "/" + t.Broker + "/" + in.topicName + "/" + in.partName + "/" + in.fileName
 	file, fd, Err, err := NewFile(str)
 	if err != nil {
+		t.mu.Unlock()
 		return Err, err
 	}
 	t.Files[str] = file
@@ -145,6 +146,7 @@ func (t *Topic) PrepareSendHandle(in info, zkclient *zkserver_operations.Client)
 	if !ok {
 		file_ptr, fd, Err, err := CheckFile(str)
 		if err != nil {
+			t.mu.Unlock()
 			return Err, err
 		}
 		fd.Close()
@@ -203,6 +205,7 @@ func (t *Topic) HandleStartToGet(sub_name string, in info, cli *client_operation
 
 func (t *Topic) GetFile(in info) (File *File, Fd *os.File) {
 	t.mu.RLock()
+	defer t.mu.RUnlock()
 	str, _ := os.Getwd()
 	str += "/" + t.Broker + "/" + in.topicName + "/" + in.partName + "/" + in.fileName
 	file, ok := t.Files[str]
@@ -217,7 +220,6 @@ func (t *Topic) GetFile(in info) (File *File, Fd *os.File) {
 	} else {
 		Fd = file.OpenFileRead()
 	}
-	t.mu.RUnlock()
 	return file, Fd
 }
 
@@ -234,6 +236,37 @@ func (t *Topic) PullMessage(in info) (MSGS, error) {
 	}
 
 	return sub.PullMsgs(in)
+}
+
+func (t *Topic) AddSubscription(in info) (retsub *SubScription, err error) {
+	ret := GetStringfromSub(in.topicName, in.partName, in.option)
+	t.mu.RLock()
+	sub, ok := t.subList[ret]
+	t.mu.RUnlock()
+
+	if !ok {
+		t.mu.Lock()
+		subscription := NewSubScription(in, ret, t.Parts, t.Files)
+		t.subList[ret] = subscription
+		t.mu.Unlock()
+	} else {
+		sub.AddConsumerInGroup(in)
+	}
+
+	return sub, nil
+}
+
+func (t *Topic) ReduceSubscription(in info) (string, error) {
+	ret := GetStringfromSub(in.topicName, in.partName, in.option)
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	sub, ok := t.subList[ret]
+	if !ok {
+		return ret, errors.New("this topic do not have this subscription")
+	} else {
+		sub.ReduceConsumer(in)
+	}
+	return ret, nil
 }
 
 const (
@@ -461,6 +494,20 @@ func (s *SubScription) AddNode(in info, file *File) {
 	s.mu.Unlock()
 }
 
+// 将group中添加consumer
+func (s *SubScription) AddConsumerInGroup(in info) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	switch in.option {
+	case TOPIC_NIL_PTP_PUSH:
+		s.groups[0].AddClient(in.consumer)
+	case TOPIC_KEY_PSB_PUSH:
+		group := NewGroup(in.topicName, in.consumer)
+		s.groups = append(s.groups, group)
+	}
+}
+
 // 将config中添加consumer 当consumer StartGet时才调用
 func (s *SubScription) AddConsumerInConfig(in info, cli *client_operations.Client) {
 	s.mu.Lock()
@@ -492,6 +539,22 @@ func (s *SubScription) ShutdownConsumerInGroup(cliName string) string {
 	}
 
 	return s.topic_name
+}
+
+// group和config中都需要减少，当有consumer取消订阅时调用
+func (s *SubScription) ReduceConsumer(in info) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	switch in.option {
+	case TOPIC_NIL_PTP_PUSH:
+		s.groups[0].DeleteClient(in.consumer)
+		s.PTP_config.DeleteCli(in.partName, in.consumer) //delete config中的consumer
+	case TOPIC_KEY_PSB_PUSH:
+		for _, group := range s.groups {
+			group.DeleteClient(in.consumer)
+		}
+	}
 }
 
 func (s *SubScription) PullMsgs(in info) (MSGS, error) {
@@ -548,6 +611,28 @@ func NewConfig(topicName string, partNum int, partitions map[string]*Partition, 
 func (c *Config) GetCloseChan(ch chan *Part) {
 	for close := range ch {
 		c.DeletePartition(close.partName, close.file)
+	}
+}
+
+func (c *Config) DeleteCli(partName string, cliName string) {
+	c.mu.Lock()
+
+	c.con_num--
+	delete(c.Clis, cliName)
+
+	err := c.consistent.Reduce(cliName)
+	logger.DEBUG(logger.DError, "%v\n", err.Error())
+
+	c.mu.Unlock()
+
+	c.RebalancePtoC()
+	c.UpdateParts()
+
+	for i, name := range c.PartToCon[partName] {
+		if name == cliName {
+			c.PartToCon[partName] = append(c.PartToCon[partName][:i], c.PartToCon[partName][i+1:]...)
+			break
+		}
 	}
 }
 
@@ -722,6 +807,39 @@ func (c *Consistent) Add(node string, power int) error {
 		virtualKey := c.hashKey(node + strconv.Itoa(i))
 		c.circle[virtualKey] = node
 		c.hashSortedNodes = append(c.hashSortedNodes, virtualKey)
+	}
+
+	sort.Slice(c.hashSortedNodes, func(i, j int) bool {
+		return c.hashSortedNodes[i] < c.hashSortedNodes[j]
+	})
+
+	return nil
+}
+
+func (c *Consistent) Reduce(node string) error {
+	if node == "" {
+		return nil
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if _, ok := c.nodes[node]; !ok {
+		return errors.New("node already delete")
+	}
+
+	delete(c.nodes, node)
+	delete(c.ConH, node)
+
+	for i := 0; i < c.virtualNodeCount; i++ {
+		virtualKey := c.hashKey(node + strconv.Itoa(i))
+		delete(c.circle, virtualKey)
+		for j := 0; j < len(c.hashSortedNodes); j++ {
+			if c.hashSortedNodes[j] == virtualKey && j != len(c.hashSortedNodes)-1 {
+				c.hashSortedNodes = append(c.hashSortedNodes[:j], c.hashSortedNodes[j+1:]...)
+			} else if j == len(c.hashSortedNodes)-1 {
+				c.hashSortedNodes = c.hashSortedNodes[:j]
+			}
+		}
 	}
 
 	sort.Slice(c.hashSortedNodes, func(i, j int) bool {

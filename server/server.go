@@ -379,6 +379,35 @@ func (s *Server) CloseFetchHandle(in info) (ret string, err error) {
 	}
 }
 
+// subscribe 订阅
+func (s *Server) SubHandle(in info) (err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	topic, ok := s.topics[in.topicName]
+	if !ok {
+		return errors.New("this topic is not in this broker")
+	}
+	sub, err := topic.AddSubscription(in)
+	if err != nil {
+		s.consumers[in.consumer].AddSubscription(sub)
+	}
+	return nil
+}
+
+func (s *Server) UnSubHandle(in info) (err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	topic, ok := s.topics[in.topicName]
+	if !ok {
+		return errors.New("this topic is not in this broker")
+	}
+	sub_name, err := topic.ReduceSubscription(in)
+	if err != nil {
+		s.consumers[in.consumer].ReduceSubscription(sub_name)
+	}
+	return nil
+}
+
 // start到该partition中的raft集群中
 // 收到返回后判断该写入还是返回
 func (s *Server) PushHandle(in info) (ret string, err error) {

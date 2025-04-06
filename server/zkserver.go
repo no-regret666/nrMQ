@@ -650,7 +650,7 @@ func (z *ZKServer) HandStartGetBroker(info Info_in) (rets []byte, size int, err 
 	if err != nil {
 		return nil, 0, err
 	}
-	logger.DEBUG(logger.DLog, "the brokers are %v", Parts)
+	logger.DEBUG(logger.DLog, "the brokers are %v\n", Parts)
 
 	//获取到信息后将通知brokers，让他们检查是否有该topic/partition/subscription/config等
 	//并开启part发送协程，若协程在超时时间到后未收到管道的信息，则关闭协程

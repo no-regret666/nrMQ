@@ -280,12 +280,13 @@ func (z *ZK) CreateState(name string) error {
 	path := z.BrokerRoot + "/" + name + "/state"
 	ok, _, err := z.conn.Exists(path)
 	if ok {
-		return err
-	}
-	_, err = z.conn.Create(path, nil, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
-	if err != nil {
-		logger.DEBUG(logger.DLog, "create broker state %v failed %v\n", path, err.Error())
-		return err
+		logger.DEBUG(logger.DLog, "the %v already exists.\n", path)
+	} else {
+		_, err = z.conn.Create(path, nil, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
+		if err != nil {
+			logger.DEBUG(logger.DLog, "create broker state %v failed %v\n", path, err.Error())
+			return err
+		}
 	}
 	return nil
 }
@@ -358,8 +359,8 @@ func (z *ZK) GetBrokers(topic string) ([]Part, error) {
 				}
 				logger.DEBUG(logger.DLog, "the max_replica is %v\n", max_replica)
 				var ret string
-				if max_replica.EndOffset != 0 {
-					ret = "OK"
+				if max_replica.Name != "" {
+					ret = "ok"
 				} else {
 					ret = "the brokers are not online"
 				}

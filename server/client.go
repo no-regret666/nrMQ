@@ -68,6 +68,18 @@ func (c *Client) GetCli() *client_operations.Client {
 	return &c.consumer
 }
 
+func (c *Client) AddSubscription(sub *SubScription) {
+	c.mu.Lock()
+	c.subList[sub.name] = sub
+	c.mu.Unlock()
+}
+
+func (c *Client) ReduceSubscription(name string) {
+	c.mu.Lock()
+	delete(c.subList, name)
+	c.mu.Unlock()
+}
+
 type Part struct {
 	mu        sync.RWMutex
 	topicName string
@@ -376,11 +388,32 @@ func NewGroup(topicName, cliName string) *Group {
 	return group
 }
 
+func (g *Group) AddClient(cliName string) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	_, ok := g.consumers[cliName]
+	if ok {
+		return errors.New("this client has in this group")
+	} else {
+		g.consumers[cliName] = true
+		return nil
+	}
+}
+
 func (g *Group) DownClient(cliName string) {
 	g.mu.Lock()
 	_, ok := g.consumers[cliName]
 	if ok {
 		g.consumers[cliName] = false
+	}
+	g.mu.Unlock()
+}
+
+func (g *Group) DeleteClient(cliName string) {
+	g.mu.Lock()
+	_, ok := g.consumers[cliName]
+	if ok {
+		delete(g.consumers, cliName)
 	}
 	g.mu.Unlock()
 }
