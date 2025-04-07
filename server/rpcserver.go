@@ -324,8 +324,8 @@ func (s *RPCServer) UpdatePTPOffset(ctx context.Context, req *api.UpdatePTPOffse
 }
 
 func (s *RPCServer) Sub(ctx context.Context, req *api.SubRequest) (r *api.SubResponse, err error) {
-	err = s.server.SubHandle(info{
-		consumer:  req.Consumer,
+	err = s.zkserver.SubHandle(Info_in{
+		cliName:   req.Consumer,
 		topicName: req.Topic,
 		partName:  req.Key,
 		option:    req.Option,
@@ -548,5 +548,24 @@ func (s *RPCServer) GetNewLeader(ctx context.Context, req *api.GetNewLeaderReque
 			LeaderBroker: info.brokerName,
 			HostPort:     info.broHostPort,
 		}, nil
+	}
+}
+
+func (s *RPCServer) Sub2(ctx context.Context, req *api.Sub2Request) (r *api.Sub2Response, err error) {
+	err = s.server.SubHandle(info{
+		consumer:  req.Consumer,
+		topicName: req.Topic,
+		partName:  req.Key,
+		option:    req.Option,
+	})
+
+	if err != nil {
+		return &api.Sub2Response{
+			Ret: false,
+		}, err
+	} else {
+		return &api.Sub2Response{
+			Ret: true,
+		}, err
 	}
 }

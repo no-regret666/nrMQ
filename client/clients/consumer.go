@@ -84,7 +84,7 @@ func (c *Consumer) SendInfo(port string, cli *server_operations.Client) error {
 }
 
 func (c *Consumer) Sub(topic, partition string, option int8) (err error) {
-	//向zkserver订阅topic和partition   option:订阅类型，PTP/PSB
+	//向server订阅topic和partition   option:订阅类型，PTP/PSB
 	c.mu.RLock()
 	zk := c.zkBroker
 	c.mu.RUnlock()

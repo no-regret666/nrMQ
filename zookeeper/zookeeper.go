@@ -20,7 +20,7 @@ var (
 )
 
 type ZK struct {
-	conn *zk.Conn
+	Conn *zk.Conn
 
 	Root       string
 	BrokerRoot string
@@ -40,37 +40,37 @@ func NewZK(info ZkInfo) (*ZK, error) {
 	}
 
 	z := &ZK{
-		conn:       conn,
+		Conn:       conn,
 		Root:       info.Root,
 		BrokerRoot: info.Root + "/Brokers",
 		TopicRoot:  info.Root + "/Topics",
 	}
 
-	ok, _, err := z.conn.Exists(z.Root)
+	ok, _, err := z.Conn.Exists(z.Root)
 	if ok {
 		logger.DEBUG(logger.DLog, "the %v already exists.\n", z.Root)
 	} else {
-		_, err = z.conn.Create(z.Root, nil, 0, zk.WorldACL(zk.PermAll))
+		_, err = z.Conn.Create(z.Root, nil, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
 			logger.DEBUG(logger.DError, "the zkRoot %v create failed %v\n", z.Root, err.Error())
 			return nil, err
 		}
 	}
-	ok, _, err = z.conn.Exists(z.BrokerRoot)
+	ok, _, err = z.Conn.Exists(z.BrokerRoot)
 	if ok {
 		logger.DEBUG(logger.DLog, "the %v already exists.\n", z.BrokerRoot)
 	} else {
-		_, err = z.conn.Create(z.BrokerRoot, nil, 0, zk.WorldACL(zk.PermAll))
+		_, err = z.Conn.Create(z.BrokerRoot, nil, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
 			logger.DEBUG(logger.DError, "the zkBroker %v create failed %v\n", z.BrokerRoot, err.Error())
 			return nil, err
 		}
 	}
-	ok, _, err = z.conn.Exists(z.TopicRoot)
+	ok, _, err = z.Conn.Exists(z.TopicRoot)
 	if ok {
 		logger.DEBUG(logger.DLog, "the %v already exists.\n", z.TopicRoot)
 	} else {
-		_, err = z.conn.Create(z.TopicRoot, nil, 0, zk.WorldACL(zk.PermAll))
+		_, err = z.Conn.Create(z.TopicRoot, nil, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
 			logger.DEBUG(logger.DError, "the zkTopicRoot %v create failed %v\n", z.TopicRoot, err.Error())
 			return nil, err
@@ -183,13 +183,13 @@ func (z *ZK) RegisterNode(znode interface{}) (err error) {
 		logger.DEBUG(logger.DError, "the node %v turn json failed %v\n", path, err.Error())
 		return err
 	}
-	ok, _, _ := z.conn.Exists(path)
+	ok, _, _ := z.Conn.Exists(path)
 	if ok {
 		logger.DEBUG(logger.DLog, "the node %v had in zookeeper\n", path)
-		_, sata, _ := z.conn.Get(path)
-		z.conn.Set(path, data, sata.Version)
+		_, sata, _ := z.Conn.Get(path)
+		z.Conn.Set(path, data, sata.Version)
 	} else {
-		_, err = z.conn.Create(path, data, 0, zk.WorldACL(zk.PermAll))
+		_, err = z.Conn.Create(path, data, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
 			logger.DEBUG(logger.DError, "the node %v create failed %v\n", path, err.Error())
 			return err
@@ -198,24 +198,24 @@ func (z *ZK) RegisterNode(znode interface{}) (err error) {
 
 	if i.Name() == "TopicNode" {
 		partitionPath := path + "/" + "Partitions"
-		ok, _, err := z.conn.Exists(partitionPath)
+		ok, _, err := z.Conn.Exists(partitionPath)
 		if ok {
 			logger.DEBUG(logger.DLog, "the node %v had in zookeeper\n", partitionPath)
 			return err
 		}
-		_, err = z.conn.Create(partitionPath, nil, 0, zk.WorldACL(zk.PermAll))
+		_, err = z.Conn.Create(partitionPath, nil, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
 			logger.DEBUG(logger.DError, "the node %v create failed %v\n", partitionPath, err.Error())
 			return err
 		}
 
 		subscriptionPath := path + "/" + "Subscriptions"
-		ok, _, err = z.conn.Exists(subscriptionPath)
+		ok, _, err = z.Conn.Exists(subscriptionPath)
 		if ok {
 			logger.DEBUG(logger.DLog, "the node %v had in zookeeper\n", subscriptionPath)
 			return err
 		}
-		_, err = z.conn.Create(subscriptionPath, nil, 0, zk.WorldACL(zk.PermAll))
+		_, err = z.Conn.Create(subscriptionPath, nil, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
 			logger.DEBUG(logger.DError, "the node %v create failed %v\n", subscriptionPath, err.Error())
 			return err
@@ -227,7 +227,7 @@ func (z *ZK) RegisterNode(znode interface{}) (err error) {
 
 func (z *ZK) UpdatePartitionNode(pnode PartitionNode) error {
 	path := fmt.Sprintf(PNodePath, z.TopicRoot, pnode.TopicName, pnode.Name)
-	ok, _, err := z.conn.Exists(path)
+	ok, _, err := z.Conn.Exists(path)
 	if !ok {
 		return err
 	}
@@ -235,8 +235,8 @@ func (z *ZK) UpdatePartitionNode(pnode PartitionNode) error {
 	if err != nil {
 		return err
 	}
-	_, sate, _ := z.conn.Get(path)
-	_, err = z.conn.Set(path, data, sate.Version)
+	_, sate, _ := z.Conn.Get(path)
+	_, err = z.Conn.Set(path, data, sate.Version)
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func (z *ZK) UpdatePartitionNode(pnode PartitionNode) error {
 
 func (z *ZK) UpdateBlockNode(bnode BlockNode) error {
 	path := fmt.Sprintf(BNodePath, z.TopicRoot, bnode.TopicName, bnode.PartName, bnode.Name)
-	ok, _, err := z.conn.Exists(path)
+	ok, _, err := z.Conn.Exists(path)
 	if !ok {
 		return err
 	}
@@ -254,8 +254,8 @@ func (z *ZK) UpdateBlockNode(bnode BlockNode) error {
 	if err != nil {
 		return err
 	}
-	_, sate, _ := z.conn.Get(path)
-	_, err = z.conn.Set(path, data, sate.Version)
+	_, sate, _ := z.Conn.Get(path)
+	_, err = z.Conn.Set(path, data, sate.Version)
 	if err != nil {
 		return err
 	}
@@ -265,11 +265,11 @@ func (z *ZK) UpdateBlockNode(bnode BlockNode) error {
 func (z *ZK) GetPartState(topic_name, part_name string) (PartitionNode, error) {
 	var node PartitionNode
 	path := fmt.Sprintf(PNodePath, z.TopicRoot, topic_name, part_name)
-	ok, _, err := z.conn.Exists(path)
+	ok, _, err := z.Conn.Exists(path)
 	if !ok {
 		return node, err
 	}
-	data, _, _ := z.conn.Get(path)
+	data, _, _ := z.Conn.Get(path)
 
 	err = json.Unmarshal(data, &node)
 
@@ -278,11 +278,11 @@ func (z *ZK) GetPartState(topic_name, part_name string) (PartitionNode, error) {
 
 func (z *ZK) CreateState(name string) error {
 	path := z.BrokerRoot + "/" + name + "/state"
-	ok, _, err := z.conn.Exists(path)
+	ok, _, err := z.Conn.Exists(path)
 	if ok {
 		logger.DEBUG(logger.DLog, "the %v already exists.\n", path)
 	} else {
-		_, err = z.conn.Create(path, nil, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
+		_, err = z.Conn.Create(path, nil, zk.FlagEphemeral, zk.WorldACL(zk.PermAll))
 		if err != nil {
 			logger.DEBUG(logger.DLog, "create broker state %v failed %v\n", path, err.Error())
 			return err
@@ -305,7 +305,7 @@ type Part struct {
 // 检查broker是否在线
 func (z *ZK) CheckBroker(BrokerName string) bool {
 	path := z.BrokerRoot + "/" + BrokerName + "/state"
-	ok, _, _ := z.conn.Exists(path)
+	ok, _, _ := z.Conn.Exists(path)
 	logger.DEBUG(logger.DLog, "state(%v) path is %v\n", ok, path)
 	return ok
 }
@@ -313,14 +313,14 @@ func (z *ZK) CheckBroker(BrokerName string) bool {
 // consumer获取PTP的Brokers //(和PTP的offset)
 func (z *ZK) GetBrokers(topic string) ([]Part, error) {
 	path := fmt.Sprintf(TNodePath, z.TopicRoot, topic) + "/" + "Partitions"
-	ok, _, err := z.conn.Exists(path)
+	ok, _, err := z.Conn.Exists(path)
 	if !ok || err != nil {
 		logger.DEBUG(logger.DError, "%v\n", err.Error())
 		return nil, err
 	}
 
 	var parts []Part
-	partitions, _, _ := z.conn.Children(path)
+	partitions, _, _ := z.Conn.Children(path)
 	for _, part := range partitions {
 		PNode, err := z.GetPartitionNode(path + "/" + part)
 		if err != nil {
@@ -331,7 +331,7 @@ func (z *ZK) GetBrokers(topic string) ([]Part, error) {
 
 		var max_replica ReplicaNode
 		max_replica.EndOffset = 0
-		blocks, _, _ := z.conn.Children(path + "/" + part)
+		blocks, _, _ := z.Conn.Children(path + "/" + part)
 		for _, block := range blocks {
 			info, err := z.GetBlockNode(path + "/" + part + "/" + block)
 			if err != nil {
@@ -340,7 +340,7 @@ func (z *ZK) GetBrokers(topic string) ([]Part, error) {
 			}
 			logger.DEBUG(logger.DLog, "the block is %v\n", info)
 			if info.StartOffset <= PTP_index && info.EndOffset >= PTP_index {
-				Replicas, _, _ := z.conn.Children(path + "/" + part + "/" + info.Name)
+				Replicas, _, _ := z.Conn.Children(path + "/" + part + "/" + info.Name)
 				for _, replica := range Replicas {
 					replicaNode, err := z.GetReplicaNode(path + "/" + part + "/" + info.Name + "/" + replica)
 					if err != nil {
@@ -390,7 +390,7 @@ func (z *ZK) GetBrokers(topic string) ([]Part, error) {
 
 func (z *ZK) GetBroker(topic, part string, offset int64) (parts []Part, err error) {
 	part_path := fmt.Sprintf(PNodePath, z.TopicRoot, topic, part)
-	ok, _, err := z.conn.Exists(part_path)
+	ok, _, err := z.Conn.Exists(part_path)
 	if !ok || err != nil {
 		logger.DEBUG(logger.DError, "%v\n", err.Error())
 		return nil, err
@@ -398,7 +398,7 @@ func (z *ZK) GetBroker(topic, part string, offset int64) (parts []Part, err erro
 
 	var max_replica ReplicaNode
 	max_replica.EndOffset = 0
-	blocks, _, _ := z.conn.Children(part_path)
+	blocks, _, _ := z.Conn.Children(part_path)
 	for _, block := range blocks {
 		info, err := z.GetBlockNode(part_path + "/" + block)
 		if err != nil {
@@ -407,7 +407,7 @@ func (z *ZK) GetBroker(topic, part string, offset int64) (parts []Part, err erro
 		}
 
 		if info.StartOffset <= offset && info.EndOffset >= offset {
-			Replicas, _, _ := z.conn.Children(part_path + "/" + block)
+			Replicas, _, _ := z.Conn.Children(part_path + "/" + block)
 			for _, replica := range Replicas {
 				replicaNode, err := z.GetReplicaNode(part_path + "/" + block + "/" + replica)
 				if err != nil {
@@ -422,8 +422,8 @@ func (z *ZK) GetBroker(topic, part string, offset int64) (parts []Part, err erro
 				}
 			}
 			var ret string
-			if max_replica.EndOffset != 0 {
-				ret = "OK"
+			if max_replica.Name != "" {
+				ret = "ok"
 			} else {
 				ret = "the brokers are not online"
 			}
@@ -464,12 +464,12 @@ func (z *ZK) CheckSub(info StartGetInfo) bool {
 
 func (z *ZK) GetBlockSize(topicName, partName string) (int, error) {
 	path := fmt.Sprintf(PNodePath, z.TopicRoot, topicName, partName)
-	ok, _, err := z.conn.Exists(path)
+	ok, _, err := z.Conn.Exists(path)
 	if !ok {
 		return 0, err
 	}
 
-	parts, _, err := z.conn.Children(path)
+	parts, _, err := z.Conn.Children(path)
 	if err != nil {
 		return 0, err
 	}
@@ -479,22 +479,22 @@ func (z *ZK) GetBlockSize(topicName, partName string) (int, error) {
 func (z *ZK) GetBrokerNode(name string) (BrokerNode, error) {
 	path := z.BrokerRoot + "/" + name
 	var bronode BrokerNode
-	ok, _, err := z.conn.Exists(path)
+	ok, _, err := z.Conn.Exists(path)
 	if !ok {
 		return bronode, err
 	}
-	data, _, _ := z.conn.Get(path)
+	data, _, _ := z.Conn.Get(path)
 	err = json.Unmarshal(data, &bronode)
 	return bronode, nil
 }
 
 func (z *ZK) GetPartitionNode(path string) (PartitionNode, error) {
 	var pnode PartitionNode
-	ok, _, err := z.conn.Exists(path)
+	ok, _, err := z.Conn.Exists(path)
 	if !ok {
 		return pnode, err
 	}
-	data, _, _ := z.conn.Get(path)
+	data, _, _ := z.Conn.Get(path)
 	err = json.Unmarshal(data, &pnode)
 
 	return pnode, nil
@@ -502,7 +502,7 @@ func (z *ZK) GetPartitionNode(path string) (PartitionNode, error) {
 
 func (z *ZK) GetBlockNode(path string) (BlockNode, error) {
 	var blocknode BlockNode
-	data, _, err := z.conn.Get(path)
+	data, _, err := z.Conn.Get(path)
 	if err != nil {
 		logger.DEBUG(logger.DError, "the block path is %v err is %v\n", path, err.Error())
 		return blocknode, err
@@ -514,18 +514,18 @@ func (z *ZK) GetBlockNode(path string) (BlockNode, error) {
 
 func (z *ZK) GetReplicaNode(path string) (ReplicaNode, error) {
 	var pnode ReplicaNode
-	ok, _, err := z.conn.Exists(path)
+	ok, _, err := z.Conn.Exists(path)
 	if !ok {
 		return pnode, err
 	}
-	data, _, _ := z.conn.Get(path)
+	data, _, _ := z.Conn.Get(path)
 	err = json.Unmarshal(data, &pnode)
 	return pnode, nil
 }
 
 func (z *ZK) GetReplicaNodes(topicName, partName, blockName string) (nodes []ReplicaNode) {
 	path := fmt.Sprintf(BlNodePath, z.TopicRoot, topicName, partName, blockName)
-	reps, _, _ := z.conn.Children(path)
+	reps, _, _ := z.Conn.Children(path)
 	for _, repName := range reps {
 		RepNode, err := z.GetReplicaNode(path + "/" + repName)
 		if err != nil {

@@ -384,7 +384,8 @@ func (s *Server) SubHandle(in info) (err error) {
 	defer s.mu.Unlock()
 	topic, ok := s.topics[in.topicName]
 	if !ok {
-		return errors.New("this topic is not in this broker")
+		topic = NewTopic(s.Name, in.partName)
+		s.topics[in.topicName] = topic
 	}
 	sub, err := topic.AddSubscription(in)
 	if err != nil {

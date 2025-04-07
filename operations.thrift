@@ -171,6 +171,17 @@ struct CloseFetchPartitionResponse {
     2: string Err
 }
 
+struct Sub2Request {
+    1: string consumer
+    2: string topic
+    3: string key
+    4: i8 option
+}
+
+struct Sub2Response {
+    1: bool ret
+}
+
 service Server_Operations {
     //producer used
     PushResponse push(1: PushRequest req)
@@ -181,6 +192,7 @@ service Server_Operations {
     PullResponse Pull(1: PullRequest req)
 
     //zkserver used this rpc to request broker server
+    Sub2Response Sub2(1: Sub2Request req)
     PrepareAcceptResponse PrepareAccept(1: PrepareAcceptRequest req)
     CloseAcceptResponse CloseAccept(1: CloseAcceptRequest req)
     PrepareStateResponse PrepareState(1: PrepareStateRequest req)

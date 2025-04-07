@@ -616,6 +616,32 @@ func (z *ZKServer) SubHandle(info Info_in) error {
 		logger.DEBUG(logger.DError, "the topic-partition(%v-%v) does not exist\n", info.topicName, info.partName)
 		return errors.New("the topic-partition does not exist")
 	}
+	path += "/NowBlock"
+	replicas, _, _ := z.zk.Conn.Children(path)
+	for _, replica := range replicas {
+		replicaNode, _ := z.zk.GetReplicaNode(path + "/" + replica)
+		bro_cli, ok := z.Brokers[replicaNode.BrokerName]
+		if !ok {
+			brokerNode, _ := z.zk.GetBrokerNode(fmt.Sprintf(zookeeper.BNodePath, z.zk.BrokerRoot, replicaNode.BrokerName))
+			bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(brokerNode.BrokHostPort))
+			if err != nil {
+				logger.DEBUG(logger.DError, "broker(%v) host_port(%v) can't connect %v", brokerNode.Name, brokerNode.BrokHostPort, err.Error())
+			}
+			z.mu.Lock()
+			z.Brokers[brokerNode.Name] = bro_cli
+			z.mu.Unlock()
+		}
+		resp, err := bro_cli.Sub2(context.Background(), &api.Sub2Request{
+			Consumer: info.cliName,
+			Topic:    info.topicName,
+			Key:      info.partName,
+			Option:   info.option,
+		})
+		if err != nil || !resp.Ret {
+			logger.DEBUG(logger.DError, "server sub failed %v\n", err.Error())
+			return errors.New("server sub fail")
+		}
+	}
 	err = z.zk.RegisterNode(zookeeper.SubscriptionNode{
 		Name:      info.cliName,
 		TopicName: info.topicName,
@@ -709,7 +735,7 @@ func (z *ZKServer) SendPreoare(Parts []zookeeper.Part, info Info_in) (partkeys [
 		}
 		resp, err := bro_cli.PrepareSend(context.Background(), rep)
 		if err != nil || !resp.Ret {
-			logger.DEBUG(logger.DError, "PrepareSend error %v", err.Error())
+			logger.DEBUG(logger.DError, "PrepareSend error %v\n", err.Error())
 		}
 		logger.DEBUG(logger.DLog, "the part is %v", part)
 		partkeys = append(partkeys, clients.PartKey{
