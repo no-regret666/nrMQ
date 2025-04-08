@@ -511,10 +511,13 @@ func (rf *Raft) Start(command Operation, beLeader bool, leader int) (int, int, b
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 	newLog := Log{
-		Term:    rf.currentTerm,
-		Index:   len(rf.log) + rf.log[0].Index,
-		Command: command,
+		Term:     rf.currentTerm,
+		Index:    len(rf.log) + rf.log[0].Index,
+		Command:  command,
+		BeLeader: beLeader,
+		Leader:   leader,
 	}
+
 	rf.log = append(rf.log, newLog)
 	rf.persist()
 	DPrintf("[%d] %d receive a new command %v,then append at %d\n", rf.currentTerm, rf.me, command, newLog.Index)

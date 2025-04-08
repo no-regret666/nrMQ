@@ -122,6 +122,7 @@ func CreateList(path string) error {
 		if err != nil {
 			_, file, line, _ := runtime.Caller(1)
 			logger.DEBUG(logger.DError, "%v:%v mkdir %v error %v\n", file, line, path, err.Error())
+			return err
 		}
 	}
 

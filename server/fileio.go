@@ -18,7 +18,7 @@ type File struct {
 	node_size int
 }
 
-// 消息以 key-msg([]byte)-key-msg-...... 的格式写入文件（分块存储）
+// 分块存储
 type Key struct {
 	Size        int64 `json:"size"`
 	Start_index int64 `json:"start_index"`
@@ -184,7 +184,7 @@ func (f *File) GetFirstIndex(file *os.File) int64 {
 	binary.Write(buf, binary.BigEndian, data_node)
 	binary.Read(buf, binary.BigEndian, &node)
 
-	return node.End_index
+	return node.Start_index
 }
 
 func (f *File) FindOffset(file *os.File, index int64) (int64, error) {

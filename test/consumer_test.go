@@ -50,10 +50,16 @@ func TestPullPTP(t *testing.T) {
 	consumer := NewConsumerAndStart(t, ":7881", ":7878", "consumer1")
 	time.Sleep(1 * time.Second)
 
+	fmt.Println("Consumer Sub a Topic")
+	err := consumer.Sub("phone_number", "xian", PTP)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
 	fmt.Println("Consumer startGet")
 	parts, ret, err := consumer.StartGet(clients.Info{
 		Topic:  "phone_number",
-		Part:   "wang",
+		Part:   "xian",
 		Option: server.TOPIC_NIL_PTP_PULL,
 	})
 	if err != nil {
@@ -66,7 +72,7 @@ func TestPullPTP(t *testing.T) {
 		if err != nil {
 			t.Fatal(err.Error())
 		}
-		info := clients.NewInfo(0, "phone_number", "wang")
+		info := clients.NewInfo(0, "phone_number", "xian")
 		info.Cli = cli
 		info.Option = server.TOPIC_NIL_PTP_PULL
 		info.Size = 10
@@ -102,7 +108,7 @@ func TestPullPSB(t *testing.T) {
 
 	parts, ret, err := consumer.StartGet(clients.Info{
 		Topic:  "phone_number",
-		Part:   "wang",
+		Part:   "xian",
 		Option: server.TOPIC_KEY_PSB_PULL,
 	})
 	if err != nil {
@@ -114,7 +120,7 @@ func TestPullPSB(t *testing.T) {
 		if err != nil {
 			t.Fatal(err.Error())
 		}
-		info := clients.NewInfo(0, "phone_number", "wang")
+		info := clients.NewInfo(0, "phone_number", "xian")
 		info.Cli = cli
 		info.Option = server.TOPIC_KEY_PSB_PULL
 		info.Size = 10

@@ -424,7 +424,7 @@ func (p *parts_raft) AppendEntries(ctx context.Context, args *api.AppendEntriesA
 	raft_ptr, ok := p.Partitions[str]
 	p.mu.RUnlock()
 	if !ok {
-		logger.DEBUG(logger.DError, "raft(%v) is not get\n", str)
+		logger.DEBUG(logger.DWarn, "raft(%v) is not get\n", str)
 		time.Sleep(time.Second * 10)
 		return
 	}

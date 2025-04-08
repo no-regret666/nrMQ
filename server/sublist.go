@@ -54,7 +54,11 @@ func NewTopic(broker_name, topic_name string) *Topic {
 	}
 	str, _ := os.Getwd()
 	str += "/" + broker_name + "/" + topic_name
-	CreateList(str) //则存在，则不会创建
+	err := CreateList(str) //则存在，则不会创建
+	if err != nil {
+		logger.DEBUG(logger.DError, "create list failed %v\n", err.Error())
+		return nil
+	}
 
 	return topic
 }

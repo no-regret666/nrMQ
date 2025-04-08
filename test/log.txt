@@ -1,0 +1,50 @@
+Test:producer push message to partition
+Start ZKServer
+2025/04/08 19:45:05 connected to 127.0.0.1:2181
+2025/04/08 19:45:05 authenticated: id=72057787998601361, timeout=20000
+2025/04/08 19:45:05 re-submitting `0` credentials after reconnect
+LOG1 zookeeper.go:51: the /nrMQ already exists.
+LOG1 zookeeper.go:61: the /nrMQ/Brokers already exists.
+LOG1 zookeeper.go:71: the /nrMQ/Topics already exists.
+LOG1 rpcserver.go:57: ZkServer start rpcserver for brokers
+2025/04/08 19:45:05.971647 server.go:77: [Error] KITEX: server listen failed, addr=:7878 error=listen tcp :7878: bind: address already in use
+2025/04/08 19:45:05.971666 server.go:277: [Error] KITEX: server start error: error=listen tcp :7878: bind: address already in use
+ERRO rpcserver.go:62: start zkbroker failedlisten tcp :7878: bind: address already in useStart Brokers
+2025/04/08 19:45:06 connected to 127.0.0.1:2181
+2025/04/08 19:45:06 connected to 127.0.0.1:2181
+2025/04/08 19:45:06 connected to 127.0.0.1:2181
+2025/04/08 19:45:06 authenticated: id=72057787998601362, timeout=20000
+2025/04/08 19:45:06 authenticated: id=72057787998601363, timeout=20000
+2025/04/08 19:45:06 re-submitting `0` credentials after reconnect
+2025/04/08 19:45:06 authenticated: id=72057787998601364, timeout=20000
+2025/04/08 19:45:06 re-submitting `0` credentials after reconnect
+2025/04/08 19:45:06 re-submitting `0` credentials after reconnect
+LOG1 zookeeper.go:51: the /nrMQ already exists.
+LOG1 zookeeper.go:51: the /nrMQ already exists.
+LOG1 zookeeper.go:61: the /nrMQ/Brokers already exists.
+LOG1 zookeeper.go:61: the /nrMQ/Brokers already exists.
+LOG1 zookeeper.go:51: the /nrMQ already exists.
+LOG1 zookeeper.go:71: the /nrMQ/Topics already exists.
+SNAP prafts.go:252: 0 parts_raft start
+LOG1 zookeeper.go:71: the /nrMQ/Topics already exists.
+LOG1 zookeeper.go:61: the /nrMQ/Brokers already exists.
+SNAP prafts.go:252: 2 parts_raft start
+2025/04/08 19:45:06.948170 server.go:77: [Error] KITEX: server listen failed, addr=:7331 error=listen tcp :7331: bind: address already in use
+2025/04/08 19:45:06.948209 server.go:277: [Error] KITEX: server start error: error=listen tcp :7331: bind: address already in use
+ERRO prafts.go:90: the raft run fail listen tcp :7331: bind: address already in use
+2025/04/08 19:45:06.948178 server.go:77: [Error] KITEX: server listen failed, addr=:7333 error=listen tcp :7333: bind: address already in use
+LOG1 zookeeper.go:188: the node /nrMQ/Brokers/Broker0 had in zookeeper
+2025/04/08 19:45:06.948247 server.go:277: [Error] KITEX: server start error: error=listen tcp :7333: bind: address already in use
+ERRO prafts.go:90: the raft run fail listen tcp :7333: bind: address already in use
+LOG1 zookeeper.go:71: the /nrMQ/Topics already exists.
+SNAP prafts.go:252: 1 parts_raft start
+LOG1 zookeeper.go:188: the node /nrMQ/Brokers/Broker2 had in zookeeper
+2025/04/08 19:45:06.948406 server.go:77: [Error] KITEX: server listen failed, addr=:7332 error=listen tcp :7332: bind: address already in use
+2025/04/08 19:45:06.948433 server.go:277: [Error] KITEX: server start error: error=listen tcp :7332: bind: address already in use
+ERRO prafts.go:90: the raft run fail listen tcp :7332: bind: address already in use
+LOG1 zookeeper.go:188: the node /nrMQ/Brokers/Broker1 had in zookeeper
+LOG1 zookeeper.go:283: the /nrMQ/Brokers/Broker0/state already exists.
+LOG1 zookeeper.go:283: the /nrMQ/Brokers/Broker2/state already exists.
+LOG1 zookeeper.go:283: the /nrMQ/Brokers/Broker1/state already exists.
+Start Producer
+Producer Create a Topic

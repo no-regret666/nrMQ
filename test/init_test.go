@@ -12,6 +12,7 @@ func TestInit1(t *testing.T) {
 	fmt.Println("Init: init status for test")
 
 	messages := []string{
+		"18211673055", "12345678910",
 		"12345678911", "12345678912", "12345678913",
 		"12345678914", "12345678915", "12345678916",
 		"12345678917", "12345678918", "12345678919",
@@ -28,14 +29,14 @@ func TestInit1(t *testing.T) {
 
 	//创建topic
 	fmt.Println("Producer Create a Topic")
-	err := producer.CreateTopic("phone number")
+	err := producer.CreateTopic("phone_number")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
 	//每个topic创建partition
 	fmt.Println("Producer Create a Topic/Partition")
-	err = producer.CreatePart("phone_number", "shanghai1")
+	err = producer.CreatePart("phone_number", "shanghai")
 	if err != nil {
 		fmt.Println(err.Error())
 	}

@@ -546,7 +546,6 @@ func (z *ZK) GetPartNowBrokerNode(topicName, partName string) (BrokerNode, Block
 			return BrokerNode{}, BlockNode{}, err
 		}
 
-		fmt.Printf("哈哈哈哈哈哈哈哈 %v\n", NowBlock.LeaderBroker)
 		Broker, err := z.GetBrokerNode(NowBlock.LeaderBroker)
 		if err != nil {
 			logger.DEBUG(logger.DError, "get brokerNode %v fail,err is %v\n", NowBlock.LeaderBroker, err.Error())
