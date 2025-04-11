@@ -4,6 +4,7 @@ import (
 	Ser "github.com/cloudwego/kitex/server"
 	"net"
 	"nrMQ/kitex_gen/api/client_operations"
+	"nrMQ/kitex_gen/api/zkserver_operations"
 	"nrMQ/logger"
 	"nrMQ/zookeeper"
 	"os"
@@ -158,4 +159,63 @@ func CheckChangeCli(old map[string]*client_operations.Client, new []string) (red
 		}
 	}
 	return reduce, add
+}
+
+// use for test
+type Info struct {
+	TopicName string
+	PartName  string
+	FileName  string
+	NewName   string
+	Option    int8
+	Offset    int64
+	Size      int8
+
+	Ack int8
+
+	Producer string
+	Consumer string
+	CmdIndex int64
+
+	Message []byte
+
+	//raft
+	Brokers map[string]string
+	Me      int
+
+	//fetch
+	LeaderBroker string
+	HostPort     string
+
+	//update rep
+	Zkclient   *zkserver_operations.Client
+	BrokerName string
+}
+
+// use in test
+func GetInfo(in Info) info {
+	return info{
+		topicName:    in.TopicName,
+		partName:     in.PartName,
+		fileName:     in.FileName,
+		newName:      in.NewName,
+		option:       in.Option,
+		offset:       in.Offset,
+		size:         in.Size,
+		ack:          in.Ack,
+		producer:     in.Producer,
+		consumer:     in.Consumer,
+		cmdIndex:     in.CmdIndex,
+		message:      in.Message,
+		brokers:      in.Brokers,
+		me:           in.Me,
+		LeaderBroker: in.LeaderBroker,
+		HostPort:     in.HostPort,
+		zkclient:     in.Zkclient,
+		BrokerName:   in.BrokerName,
+	}
+}
+
+func GetServerInfoAply() chan info {
+	return make(chan info)
 }

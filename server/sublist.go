@@ -389,13 +389,13 @@ func (p *Partition) AddMessage(in info) (ret string, err error) {
 			End_index:   p.start_index + VIRTUAL_10 - 1,
 		}
 
-		data_msg, err := json.Marshal(node)
+		data_msg, err := json.Marshal(msg)
 		if err != nil {
 			logger.DEBUG(logger.DLog, "%v turn json fail\n", msg)
 		}
 		node.Size = int64(len(data_msg))
 
-		logger.DEBUG(logger.DLog, "need write msgs size is (%v)", node.Size)
+		logger.DEBUG(logger.DLog, "need write msgs size is (%v)\n", node.Size)
 		if !p.file.WriteFile(p.fd, node, data_msg) {
 			logger.DEBUG(logger.DError, "write to %v fail\n", p.file_name)
 		} else {
@@ -405,13 +405,15 @@ func (p *Partition) AddMessage(in info) (ret string, err error) {
 		p.queue = p.queue[VIRTUAL_10:]
 	}
 
-	(*in.zkclient).UpdateRep(context.Background(), &api.UpdateRepRequest{
-		Topic:      in.topicName,
-		Part:       in.partName,
-		BrokerName: in.BrokerName,
-		BlockName:  GetBlockName(in.fileName),
-		EndIndex:   p.index,
-	})
+	if in.zkclient != nil {
+		(*in.zkclient).UpdateRep(context.Background(), &api.UpdateRepRequest{
+			Topic:      in.topicName,
+			Part:       in.partName,
+			BrokerName: in.BrokerName,
+			BlockName:  GetBlockName(in.fileName),
+			EndIndex:   p.index,
+		})
+	}
 
 	return ret, err
 }
