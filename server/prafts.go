@@ -471,8 +471,8 @@ func (p *parts_raft) InstallSnapshot(ctx context.Context, args *api.InstallSnaps
 	}, nil
 }
 
-func (p *parts_raft) PingpongTest(ctx context.Context, req *api.PingPongRequest) (r *api.PingPongResponse, err error) {
-	return &api.PingPongResponse{
+func (p *parts_raft) Pingpongtest(ctx context.Context, req *api.PingPongArgs_) (r *api.PingPongReply, err error) {
+	return &api.PingPongReply{
 		Pong: true,
 	}, nil
 }

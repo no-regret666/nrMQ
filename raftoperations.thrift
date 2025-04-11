@@ -48,8 +48,17 @@ struct InstallSnapshotReply {
     2: bool success
 }
 
+struct PingPongArgs {
+    1: bool ping
+}
+
+struct PingPongReply {
+    1: bool pong
+}
+
 service Raft_Operations {
     RequestVoteReply RequestVote(1: RequestVoteArgs args)
     AppendEntriesReply AppendEntries(1: AppendEntriesArgs args)
     InstallSnapshotReply InstallSnapshot(1: InstallSnapshotArgs args)
+    PingPongReply Pingpongtest(1: PingPongArgs req)
 }

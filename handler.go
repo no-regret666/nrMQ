@@ -39,3 +39,9 @@ func (s *Raft_OperationsImpl) InstallSnapshot(ctx context.Context, args_ *api.In
 	// TODO: Your code here...
 	return
 }
+
+// Pingpongtest implements the Raft_OperationsImpl interface.
+func (s *Raft_OperationsImpl) Pingpongtest(ctx context.Context, req *api.PingPngArgs_) (resp *api.PingPongReply, err error) {
+	// TODO: Your code here...
+	return
+}
