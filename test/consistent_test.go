@@ -123,7 +123,7 @@ func TestConsistentBro1(t *testing.T) {
 	rep_num := 3
 	topicName := "phone_number"
 	partitions := []string{"xian", "shanghai", "beijing"}
-	brokers := []string{"Broker0", "Broker1", "Broker2"}
+	brokers := []string{"Broker0", "Broker", "Broker2"}
 
 	fmt.Println("---node is brokers")
 	consistent := server.NewConsistentBro()

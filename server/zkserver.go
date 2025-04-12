@@ -623,7 +623,7 @@ func (z *ZKServer) SubHandle(info Info_in) error {
 		bro_cli, ok := z.Brokers[replicaNode.BrokerName]
 		if !ok {
 			brokerNode, _ := z.zk.GetBrokerNode(fmt.Sprintf(zookeeper.BNodePath, z.zk.BrokerRoot, replicaNode.BrokerName))
-			bro_cli, err := server_operations.NewClient(z.Name, client.WithHostPorts(brokerNode.BrokHostPort))
+			bro_cli, err = server_operations.NewClient(z.Name, client.WithHostPorts(brokerNode.BrokHostPort))
 			if err != nil {
 				logger.DEBUG(logger.DError, "broker(%v) host_port(%v) can't connect %v", brokerNode.Name, brokerNode.BrokHostPort, err.Error())
 			}

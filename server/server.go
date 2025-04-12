@@ -29,7 +29,7 @@ type Server struct {
 	zkclient zkserver_operations.Client
 	mu       sync.RWMutex
 
-	aplych    chan info
+	appench   chan info
 	topics    map[string]*Topic
 	consumers map[string]*Client
 	brokers   map[string]*raft_operations.Client
@@ -86,7 +86,7 @@ func (s *Server) Make(opt Options, opt_cli []server.Option) {
 	s.brokers = make(map[string]*raft_operations.Client)
 	s.parts_fetch = make(map[string]string)
 	s.brokers_fetch = make(map[string]*server_operations.Client)
-	s.aplych = make(chan info)
+	s.appench = make(chan info)
 
 	s.CheckList()
 	s.Name = opt.Name
@@ -94,7 +94,7 @@ func (s *Server) Make(opt Options, opt_cli []server.Option) {
 
 	//本地创建parts-raft，为raft同步做准备
 	s.parts_rafts = NewParts_Raft()
-	s.parts_rafts.Make(opt.Name, opt_cli, s.aplych, s.me)
+	s.parts_rafts.Make(opt.Name, opt_cli, s.appench, s.me)
 	s.parts_rafts.StartServer()
 
 	//在zookeeper上创建一个永久节点，若存在则不需要创建
@@ -130,29 +130,32 @@ func (s *Server) Make(opt Options, opt_cli []server.Option) {
 	}
 
 	//开始获取管道中的内容，写入文件或更新leader
-	go s.GetApplych(s.aplych)
+	go s.GetApplych(s.appench)
 }
 
 // 接收applych管道的内容
 // 写入partition文件中
-func (s *Server) GetApplych(applych chan info) {
-	for msg := range s.aplych {
-		if msg.producer == "Leader" {
-			s.BecomeLeader(msg) //成为leader
-		} else {
-			s.mu.RLock()
-			topic, ok := s.topics[msg.topicName]
-			s.mu.RUnlock()
-
-			logger.DEBUG(logger.DLog, "%d the message from applych is %v\n", s.me, msg)
-			if !ok {
-				logger.DEBUG(logger.DError, "topic(%v) is not in this broker\n", msg.topicName)
+func (s *Server) GetApplych(appench chan info) {
+	for {
+		select {
+		case msg := <-appench:
+			if msg.producer == "Leader" {
+				s.BecomeLeader(msg) //成为leader
 			} else {
-				msg.me = s.me
-				msg.BrokerName = s.Name
-				msg.zkclient = &s.zkclient
-				msg.fileName = "NowBlock.txt"
-				topic.addMessage(msg) //信息同步
+				s.mu.RLock()
+				topic, ok := s.topics[msg.topicName]
+				s.mu.RUnlock()
+
+				logger.DEBUG(logger.DLog, "%d the message from applych is %v\n", s.me, msg)
+				if !ok {
+					logger.DEBUG(logger.DError, "topic(%v) is not in this broker\n", msg.topicName)
+				} else {
+					msg.me = s.me
+					msg.BrokerName = s.Name
+					msg.zkclient = &s.zkclient
+					msg.fileName = "NowBlock.txt"
+					topic.addMessage(msg) //信息同步
+				}
 			}
 		}
 	}

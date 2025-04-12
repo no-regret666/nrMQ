@@ -21,10 +21,10 @@ func TestRaftRPC(t *testing.T) {
 	opts_raf = append(opts_raf, server.WithServiceAddr(addr_raf))
 
 	aply := Server.GetServerInfoAply()
-	go raft_server.Make("Broker1", opts_raf, aply, 1)
+	go raft_server.Make("Broker", opts_raf, aply, 1)
 	time.Sleep(time.Second * 3)
 
-	cli, err := raft_operations.NewClient("Broker1", client.WithHostPorts(":7788"))
+	cli, err := raft_operations.NewClient("Broker", client.WithHostPorts(":7788"))
 	if err != nil {
 		t.Fatal("new client err is ", err.Error())
 	}
