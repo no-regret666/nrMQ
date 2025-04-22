@@ -30,4 +30,4 @@ sub and pub：Subscription中可以有多个消费者组，每个消费者组中
 ## 消费者组
 - consumer group下可以有一个或多个consumer instance，consumer instance可以是一个进程，也可以是一个线程
 - group.id是一个字符串，唯一标识一个consumer group
-- consumer group下订阅的topic下的每个分区只能分配给某个group下的一个consumer（当然该分区还可以被分配给其他group）
+- consumer group下订阅的topic下的每个分区只能分配给某个group下的一个consumer（当然该分区还可以被分配给其他group）       

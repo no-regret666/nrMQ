@@ -30,10 +30,10 @@ type COMD struct {
 }
 
 type SnapShot struct {
-	Tpart       string
-	Csm         map[string]int64
-	Cdm         map[string]int64
-	Apliedindex int
+	Tpart        string
+	Csm          map[string]int64
+	Cdm          map[string]int64
+	AppliedIndex int
 }
 
 type parts_raft struct {
@@ -173,7 +173,7 @@ func (p *parts_raft) Append(in info) (string, error) {
 		index, _, isLeader = p.Partitions[str].Start(Op, false, 0)
 	}
 
-	if isLeader {
+	if !isLeader {
 		return ErrWrongLeader, nil
 	} else {
 		for {
@@ -224,15 +224,15 @@ func (p *parts_raft) SendSnapShot(str string) {
 	w := new(bytes.Buffer)
 	e := raft.NewEncoder(w)
 	S := SnapShot{
-		Csm:         p.CSM[str],
-		Cdm:         p.CDM[str],
-		Tpart:       str,
-		Apliedindex: p.applyindexs[str],
+		Csm:          p.CSM[str],
+		Cdm:          p.CDM[str],
+		Tpart:        str,
+		AppliedIndex: p.applyindexs[str],
 	}
 	e.Encode(S)
 	logger.DEBUG_RAFT(logger.DSnap, "%d the size need to snap\n", p.me)
 	data := w.Bytes()
-	go p.Partitions[str].Snapshot(S.Apliedindex, data)
+	go p.Partitions[str].Snapshot(S.AppliedIndex, data)
 }
 
 func (p *parts_raft) CheckSnap() {
@@ -301,6 +301,13 @@ func (p *parts_raft) StartServer() {
 										partName:  O.Part,
 										size:      O.Size,
 									}
+
+									select {
+									case p.Add <- COMD{index: m.CommandIndex}:
+
+									default:
+
+									}
 								}
 							} else if p.CDM[O.Tpart][O.Cli_name] == O.Cmd_index {
 								p.applyindexs[O.Tpart] = m.CommandIndex
@@ -328,7 +335,7 @@ func (p *parts_raft) StartServer() {
 						} else {
 							p.CDM[S.Tpart] = S.Cdm
 							p.CSM[S.Tpart] = S.Csm
-							p.applyindexs[S.Tpart] = S.Apliedindex
+							p.applyindexs[S.Tpart] = S.AppliedIndex
 							p.mu.Unlock()
 						}
 					}
