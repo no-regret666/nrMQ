@@ -176,14 +176,17 @@ func (p *parts_raft) Append(in info) (string, error) {
 	if !isLeader {
 		return ErrWrongLeader, nil
 	} else {
+		p.mu.Lock()
+		lastIndex, ok := p.CSM[str][in.producer]
+		if !ok {
+			p.CSM[str][in.producer] = 0
+		}
+		p.CSM[str][in.producer] = in.cmdIndex
+		p.mu.Unlock()
+
 		for {
 			select {
 			case out := <-p.Add:
-				p.mu.Lock()
-				logger.DEBUG_RAFT(logger.DLog, "%d lock 312\n", p.me)
-
-				p.CSM[str][in.producer] = in.cmdIndex
-				p.mu.Unlock()
 				if index == out.index {
 					return OK, nil
 				} else {
@@ -193,10 +196,6 @@ func (p *parts_raft) Append(in info) (string, error) {
 				_, isLeader := p.Partitions[str].GetState()
 				ret := ErrTimeout
 				p.mu.Lock()
-				lastIndex, ok := p.CSM[str][in.producer]
-				if !ok {
-					p.CSM[str][in.producer] = 0
-				}
 				logger.DEBUG_RAFT(logger.DLog, "%d lock 332\n", p.me)
 				logger.DEBUG_RAFT(logger.DLeader, "%d time out\n", p.me)
 				if !isLeader {
@@ -290,6 +289,7 @@ func (p *parts_raft) StartServer() {
 								logger.DEBUG_RAFT(logger.DLog, "%d for TIMEOUT update applyindex %v to %v\n", p.me, p.applyindexs[O.Tpart], m.CommandIndex)
 								p.applyindexs[O.Tpart] = m.CommandIndex
 							} else if p.CDM[O.Tpart][O.Cli_name] < O.Cmd_index {
+								logger.DEBUG_RAFT(logger.DLeader, "S%d get message update CDM[%v][%v] from %v to %v update applyindex from %v to %v\n", p.me, O.Tpart, O.Cli_name, p.CDM[O.Tpart][O.Cli_name], O.Cmd_index, p.applyindexs[O.Tpart], m.CommandIndex)
 								p.applyindexs[O.Tpart] = m.CommandIndex
 
 								p.CDM[O.Tpart][O.Cli_name] = O.Cmd_index
@@ -310,8 +310,10 @@ func (p *parts_raft) StartServer() {
 									}
 								}
 							} else if p.CDM[O.Tpart][O.Cli_name] == O.Cmd_index {
+								logger.DEBUG_RAFT(logger.DLog2, "S%d this cmd had done,the log had two update applyindex %v to %v\n", p.me, p.applyindexs[O.Tpart], m.CommandIndex)
 								p.applyindexs[O.Tpart] = m.CommandIndex
 							} else {
+								logger.DEBUG_RAFT(logger.DLog2, "S%d the topic-partition(%v) producer(%v) OIndex(%v) < CDM(%v)\n", p.me, O.Tpart, O.Cli_name, O.Cmd_index, p.CDM[O.Tpart][O.Cli_name])
 								p.applyindexs[O.Tpart] = m.CommandIndex
 							}
 						} else if p.applyindexs[O.Tpart]+1 < m.CommandIndex {
@@ -335,6 +337,8 @@ func (p *parts_raft) StartServer() {
 						} else {
 							p.CDM[S.Tpart] = S.Cdm
 							p.CSM[S.Tpart] = S.Csm
+
+							logger.DEBUG_RAFT(logger.DSnap, "S%d recover by SnapShot update applyindex(%v) to %v\n", p.me, p.applyindexs[S.Tpart], S.AppliedIndex)
 							p.applyindexs[S.Tpart] = S.AppliedIndex
 							p.mu.Unlock()
 						}
@@ -346,6 +350,7 @@ func (p *parts_raft) StartServer() {
 						Cmd_index: -1,
 						Operate:   "TIMEOUT",
 					}
+					logger.DEBUG_RAFT(logger.DLog, "S%d have log time applied\n", p.me)
 					p.mu.RLock()
 					for str, raft := range p.Partitions {
 						O.Tpart = str
