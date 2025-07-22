@@ -43,23 +43,19 @@ type parts_raft struct {
 	Leaders    map[string]bool
 
 	me      int
-	appench chan info
-	applyCh chan raft.ApplyMsg
+	appench chan info // 和外部通信的通道，传递需要被Raft处理的消息
+	applyCh chan raft.ApplyMsg 
 
 	maxraftstate int   //snapshot if log grows this big
 	dead         int32 //set by kill()
 
 	Add chan COMD
 
-	CSM map[string]map[string]int64
-	CDM map[string]map[string]int64
-
-	ChanComd map[int]COMD //管道getkvs的消息队列
+	CSM map[string]map[string]int64 // 记录每个分区，每个生产者的最新命令索引 map[topic+partition]map[producer]index
+	CDM map[string]map[string]int64 // 记录每个分区，每个消费者的最新命令索引 map[topic+partition]map[consumer]index
 
 	//多raft,则需要多applyindex
 	applyindexs map[string]int
-
-	Now_Num int
 }
 
 func NewParts_Raft() *parts_raft {
