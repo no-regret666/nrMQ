@@ -51,8 +51,9 @@ type parts_raft struct {
 
 	Add chan COMD
 
-	CSM map[string]map[string]int64 // 记录每个分区，每个生产者的最新命令索引 map[topic+partition]map[producer]index
-	CDM map[string]map[string]int64 // 记录每个分区，每个消费者的最新命令索引 map[topic+partition]map[consumer]index
+	// 幂等性保证
+	CSM map[string]map[string]int64 // 记录每个分区、每个生产者的当前状态
+	CDM map[string]map[string]int64 // 记录每个分区、每个生产者的最新命令索引
 
 	//多raft,则需要多applyindex
 	applyindexs map[string]int
@@ -118,6 +119,7 @@ func (p *parts_raft) Append(in info) (string, error) {
 		return ErrTimeout, nil
 	}
 
+	// 幂等性检查
 	_, ok = p.CDM[str]
 	if !ok {
 		logger.DEBUG_RAFT(logger.DLog, "%d make CDM Tpart(%v)", p.me, str)
@@ -139,7 +141,6 @@ func (p *parts_raft) Append(in info) (string, error) {
 		p.CDM[str][in.producer] = 0
 	}
 	p.mu.Unlock()
-
 	var index int
 	Op := raft.Operation{
 		Ser_index: int64(p.me),
