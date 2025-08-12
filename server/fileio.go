@@ -107,25 +107,26 @@ func (f *File) GetIndex(file *os.File) int64 {
 	defer f.mu.RUnlock()
 
 	for {
+		// 读取节点头
 		_, err := file.ReadAt(data_node, offset)
 
 		if err == io.EOF {
 			//读到文件末尾
-			if index == 0 {
-				index = node.End_index
-			} else {
-				index = 0
-			}
-			return index
-		} else {
-			index = 0
+			break
+		} else if err != nil {
+			// 其他读取错误
+			return -1
 		}
-		buf := &bytes.Buffer{}
-		binary.Write(buf, binary.BigEndian, data_node)
-		binary.Read(buf, binary.BigEndian, &node)
+		// 解析节点
+		if err := binary.Read(bytes.NewReader(data_node), binary.BigEndian, &node); err != nil {
+			return -1
+		}
 
-		offset += offset + NODE_SIZE + node.Size
+		index = node.End_index
+		offset += NODE_SIZE + node.Size
 	}
+
+	return index
 }
 
 func (f *File) WriteFile(file *os.File, node Key, data_msg []byte) bool {
@@ -142,8 +143,8 @@ func (f *File) WriteFile(file *os.File, node Key, data_msg []byte) bool {
 	if f.node_size == 0 {
 		f.node_size = len(data_node.Bytes())
 	}
-	file.Write(data_node.Bytes())
-	file.Write(data_msg)
+	_, err = file.Write(data_node.Bytes())
+	_, err = file.Write(data_msg)
 
 	f.mu.Unlock()
 

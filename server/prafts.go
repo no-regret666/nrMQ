@@ -44,7 +44,7 @@ type parts_raft struct {
 
 	me      int
 	appench chan info // 和外部通信的通道，传递需要被Raft处理的消息
-	applyCh chan raft.ApplyMsg 
+	applyCh chan raft.ApplyMsg
 
 	maxraftstate int   //snapshot if log grows this big
 	dead         int32 //set by kill()
@@ -97,7 +97,7 @@ func (p *parts_raft) Append(in info) (string, error) {
 	//检查当前partition是否接收消息
 	_, ok := p.Partitions[str]
 	if !ok {
-		ret := "this partition is not in this broker"
+		ret := "partition remove"
 		logger.DEBUG_RAFT(logger.DLog, "this partition(%v) is not in this broker", str)
 		p.mu.Unlock()
 		time.Sleep(200 * time.Millisecond)

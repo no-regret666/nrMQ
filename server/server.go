@@ -432,7 +432,12 @@ func (s *Server) PushHandle(in info) (ret string, err error) {
 	case 1: //leader写入，不等待同步
 		err = topic.addMessage(in)
 	case 0: //直接返回
-		go topic.addMessage(in)
+		go func() {
+			err := topic.addMessage(in)
+			if err != nil {
+				logger.DEBUG(logger.DError, "%v\n", err.Error())
+			}
+		}()
 	}
 
 	if err != nil {
