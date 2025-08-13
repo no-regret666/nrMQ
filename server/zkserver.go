@@ -122,7 +122,7 @@ func (z *ZKServer) CreatePart(info Info_in) Info_out {
 func (z *ZKServer) CreateNowBlock(info Info_in) error {
 	block_node := zookeeper.BlockNode{
 		Name:        "NowBlock",
-		FileName:    info.topicName + info.partName + "now.txt",
+		FileName:    info.topicName + info.partName + "NowBlock.txt",
 		TopicName:   info.topicName,
 		PartName:    info.partName,
 		StartOffset: int64(0),
@@ -405,7 +405,7 @@ func (z *ZKServer) CloseAcceptPartition(topicName, partName, brokerName string, 
 			TopicName:    topicName,
 			PartName:     partName,
 			Oldfilename:  "NowBlock.txt",
-			Newfilename_: NewBlockName,
+			Newfilename_: NewFileName,
 		})
 		if err != nil || !resp.Ret {
 			logger.DEBUG(logger.DError, "%v\n", err.Error())

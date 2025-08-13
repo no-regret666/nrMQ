@@ -547,7 +547,7 @@ func (s *Server) FetchMsg(in info, cli *server_operations.Client, topic *Topic) 
 	logger.DEBUG(logger.DLog2, "the cli is %v\n", cli)
 
 	if in.fileName != "NowBlock.txt" {
-		//当文件名不为nowblock时
+		//当文件名不为nowblock时（历史块同步）
 		//创建一partition，并向该File中写入内容
 
 		go func() {
@@ -628,7 +628,7 @@ func (s *Server) FetchMsg(in info, cli *server_operations.Client, topic *Topic) 
 			}
 		}()
 	} else {
-		//当文件名为nowblock时
+		//当文件名为nowblock时（实时同步）
 		//zkserver已经让该broker准备接收文件
 		//直接调用addMessage
 
@@ -642,6 +642,7 @@ func (s *Server) FetchMsg(in info, cli *server_operations.Client, topic *Topic) 
 			}
 			ice := 0
 			for {
+				// 检测fetch机制是否还在运行
 				s.mu.RLock()
 				_, ok := s.parts_fetch[in.topicName+in.partName+in.fileName]
 				s.mu.RUnlock()

@@ -339,6 +339,12 @@ func (p *Partition) CloseAcceptMessage(in info) (start, end int64, ret string, e
 		str += "/" + p.Broker + "/" + in.topicName + "/" + in.partName
 		err = p.file.Update(str, in.newName) //修改本地文件名
 		p.file_name = in.newName
+
+		// 强制刷新缓存中的剩余消息，写入磁盘，防止丢失
+		if len(p.queue) > 0 {
+			p.flushToDisk()
+		}
+
 		p.state = DOWN
 		end = p.index
 		start = p.file.GetFirstIndex(p.fd)
@@ -379,30 +385,7 @@ func (p *Partition) AddMessage(in info) (ret string, err error) {
 
 	//达到一定大小后写入磁盘
 	if p.index-p.start_index >= VIRTUAL_10 {
-		var msg []Message
-		for i := 0; i < VIRTUAL_10; i++ {
-			msg = append(msg, p.queue[i])
-		}
-
-		node := Key{
-			Start_index: p.start_index,
-			End_index:   p.start_index + VIRTUAL_10 - 1,
-		}
-
-		data_msg, err := json.Marshal(msg)
-		if err != nil {
-			logger.DEBUG(logger.DLog, "%v turn json fail\n", msg)
-		}
-		node.Size = int64(len(data_msg))
-
-		logger.DEBUG(logger.DLog, "need write msgs size is (%v)\n", node.Size)
-		if !p.file.WriteFile(p.fd, node, data_msg) {
-			logger.DEBUG(logger.DError, "write to %v fail\n", p.file_name)
-		} else {
-			logger.DEBUG(logger.DLog, "%d write to %v success msgs %v\n", in.me, p.file_name, msg)
-		}
-		p.start_index += VIRTUAL_10 + 1
-		p.queue = p.queue[VIRTUAL_10:]
+		p.flushToDisk()
 	}
 
 	if in.zkclient != nil {
@@ -416,6 +399,26 @@ func (p *Partition) AddMessage(in info) (ret string, err error) {
 	}
 
 	return ret, err
+}
+
+func (p *Partition) flushToDisk() {
+	if len(p.queue) == 0 {
+		return
+	}
+
+	// 写入所有缓存消息
+	node := Key{
+		Start_index: p.start_index,
+		End_index:   p.index,
+		Size:        int64(len(p.queue)),
+	}
+
+	data_msg, _ := json.Marshal(p.queue)
+	p.file.WriteFile(p.fd, node, data_msg)
+
+	// 清空缓存
+	p.start_index = p.index + 1
+	p.queue = p.queue[:0]
 }
 
 type SubScription struct {
