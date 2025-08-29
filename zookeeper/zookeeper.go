@@ -10,13 +10,12 @@ import (
 )
 
 var (
-	BNodePath  = "%v/%v"                       // BrokerRoot/BrokerName
-	TNodePath  = "%v/%v"                       // TopicRoot/TopicName
-	PNodePath  = "%v/%v/Partitions/%v"         // TNodePath/Partitions/PartName
-	SNodePath  = "%v/%v/Subscriptions/%v"      // TNodePath/Subscriptions/SubscriptionName
-	BlNodePath = "%v/%v/Partitions/%v/%v"      // PNodePath/BlockName
-	RNodePath  = "%v/%v/Partitions/%v/%v/%v"   // BlNodePath/ReplicaName
-	SuberPath  = "%v/%v/%v/subscription/%v/%v" // SNodePath/suberName
+	BNodePath  = "%v/%v"                     // BrokerRoot/BrokerName
+	TNodePath  = "%v/%v"                     // TopicRoot/TopicName
+	PNodePath  = "%v/%v/Partitions/%v"       // TNodePath/Partitions/PartName
+	SNodePath  = "%v/%v/Subscriptions/%v"    // TNodePath/Subscriptions/SubscriptionName
+	BlNodePath = "%v/%v/Partitions/%v/%v"    // PNodePath/BlockName
+	RNodePath  = "%v/%v/Partitions/%v/%v/%v" // BlNodePath/ReplicaName
 )
 
 type ZK struct {
